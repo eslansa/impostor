@@ -4,7 +4,7 @@ import FontAwesome from '@expo/vector-icons/FontAwesome';
 import { useFonts } from 'expo-font';
 import * as SplashScreen from 'expo-splash-screen';
 import { useEffect } from 'react';
-import { Slot } from 'expo-router';
+import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GameProvider } from '@/context/GameContext';
 import { View, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
@@ -50,7 +50,68 @@ function RootLayoutNav() {
               behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
               style={styles.container}
             >
-              <Slot />
+              <Stack
+                screenOptions={{
+                  headerShown: false,
+                  animation: 'slide_from_right',
+                  contentStyle: { backgroundColor: '#1e1b4b' },
+                }}
+              >
+                <Stack.Screen 
+                  name="index" 
+                  options={{
+                    title: 'Inicio',
+                  }}
+                />
+                <Stack.Screen 
+                  name="players" 
+                  options={{
+                    title: 'Jugadores',
+                    animation: 'slide_from_right',
+                  }}
+                />
+                <Stack.Screen 
+                  name="settings" 
+                  options={{
+                    title: 'Ajustes',
+                    animation: 'slide_from_right',
+                  }}
+                />
+                <Stack.Screen 
+                  name="round-start" 
+                  options={{
+                    title: 'Inicio de Ronda',
+                    animation: 'slide_from_right',
+                  }}
+                />
+                <Stack.Screen 
+                  name="round" 
+                  options={{
+                    title: 'Ronda',
+                    animation: 'slide_from_right',
+                  }}
+                />
+                <Stack.Screen 
+                  name="debate" 
+                  options={{
+                    title: 'Debate',
+                    animation: 'slide_from_right',
+                  }}
+                />
+                <Stack.Screen 
+                  name="modal" 
+                  options={{
+                    presentation: 'modal',
+                    animation: 'slide_from_bottom',
+                  }}
+                />
+                <Stack.Screen 
+                  name="tabs" 
+                  options={{
+                    headerShown: false,
+                  }}
+                />
+              </Stack>
             </KeyboardAvoidingView>
           </View>
         </GameProvider>

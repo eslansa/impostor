@@ -1,8 +1,11 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useMemo } from 'react';
 import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/context/GameContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { CATEGORIES_CONFIG } from '@/constants/categories';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { HapticFeedback } from '@/utils/haptics';
 
 export default function Home() {
   const router = useRouter();
@@ -14,11 +17,31 @@ export default function Home() {
 
   const impostorCount = getImpostorCountForPlayers(numberOfPlayers);
 
+  // Calcular el número de categorías habilitadas
+  const enabledCategoriesCount = useMemo(() => {
+    let count = 0;
+    CATEGORIES_CONFIG.forEach((categoryConfig) => {
+      const selection = settings.categorySelections[categoryConfig.key];
+      if (selection && selection.enabled) {
+        // Contar subcategorías habilitadas
+        const enabledSubcategories = categoryConfig.subcategories.filter(
+          (sub) => selection.subcategories && selection.subcategories[sub.key] !== false
+        ).length;
+        if (enabledSubcategories > 0) {
+          count++;
+        }
+      }
+    });
+    return count;
+  }, [settings.categorySelections]);
+
   const handleContinue = () => {
+    HapticFeedback.medium();
     router.push('/players');
   };
 
   const handleSettings = () => {
+    HapticFeedback.light();
     router.push('/settings');
   };
 
@@ -27,7 +50,8 @@ export default function Home() {
       colors={['#1e1b4b', '#312e81', '#4c1d95']}
       style={styles.container}
     >
-      <View style={styles.content}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <View style={styles.content}>
         {/* Title */}
         <View style={styles.titleContainer}>
           <Text style={styles.title}>IMPOSTOR</Text>
@@ -47,7 +71,7 @@ export default function Home() {
           </View>
           <View style={styles.infoDivider} />
           <View style={styles.infoItem}>
-            <Text style={styles.infoValue}>{settings.selectedCategories.length}</Text>
+            <Text style={styles.infoValue}>{enabledCategoriesCount}</Text>
             <Text style={styles.infoLabel}>Categorias</Text>
           </View>
         </View>
@@ -83,12 +107,16 @@ export default function Home() {
           </Text>
         </View>
       </View>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  safeArea: {
     flex: 1,
   },
   content: {

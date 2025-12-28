@@ -1,8 +1,10 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, ScrollView, Pressable, Text } from 'react-native';
+import { View, StyleSheet, TextInput, ScrollView, Pressable, Text, KeyboardAvoidingView, Platform } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/context/GameContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { HapticFeedback } from '@/utils/haptics';
 
 export default function PlayersScreen() {
   const router = useRouter();
@@ -18,6 +20,7 @@ export default function PlayersScreen() {
   };
 
   const handleContinue = () => {
+    HapticFeedback.success();
     const validPlayers = playerNames.map((name, index) => ({
       id: `player-${index}`,
       name: name.trim() || `Jugador ${index + 1}`,
@@ -34,11 +37,17 @@ export default function PlayersScreen() {
       colors={['#1e1b4b', '#312e81', '#4c1d95']}
       style={styles.container}
     >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+          style={styles.keyboardView}
+        >
+          <ScrollView
+            style={styles.scrollView}
+            contentContainerStyle={styles.scrollContent}
+            showsVerticalScrollIndicator={false}
+            keyboardShouldPersistTaps="handled"
+          >
         <Text style={styles.title}>Jugadores</Text>
         <Text style={styles.subtitle}>Ingresa los nombres</Text>
 
@@ -54,6 +63,9 @@ export default function PlayersScreen() {
                 placeholderTextColor="rgba(255, 255, 255, 0.4)"
                 value={name}
                 onChangeText={(value) => handleNameChange(index, value)}
+                returnKeyType="next"
+                blurOnSubmit={false}
+                maxLength={20}
               />
             </View>
           ))}
@@ -73,13 +85,21 @@ export default function PlayersScreen() {
         <Text style={styles.hint}>
           Los campos vacios usaran nombres por defecto
         </Text>
-      </ScrollView>
+          </ScrollView>
+        </KeyboardAvoidingView>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  safeArea: {
+    flex: 1,
+  },
+  keyboardView: {
     flex: 1,
   },
   scrollView: {
@@ -170,3 +190,4 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 });
+

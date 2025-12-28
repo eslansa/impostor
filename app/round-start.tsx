@@ -3,6 +3,8 @@ import { View, StyleSheet, Pressable, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/context/GameContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { HapticFeedback } from '@/utils/haptics';
 
 export default function RoundStartScreen() {
   const router = useRouter();
@@ -20,6 +22,7 @@ export default function RoundStartScreen() {
 
   const handleContinue = () => {
     if (isReady) {
+      HapticFeedback.success();
       router.replace('/round');
     }
   };
@@ -32,9 +35,11 @@ export default function RoundStartScreen() {
         colors={['#1e1b4b', '#312e81', '#4c1d95']}
         style={styles.container}
       >
-        <View style={styles.loadingContainer}>
-          <Text style={styles.loadingText}>Preparando ronda...</Text>
-        </View>
+        <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+          <View style={styles.loadingContainer}>
+            <Text style={styles.loadingText}>Preparando ronda...</Text>
+          </View>
+        </SafeAreaView>
       </LinearGradient>
     );
   }
@@ -44,7 +49,8 @@ export default function RoundStartScreen() {
       colors={['#1e1b4b', '#312e81', '#4c1d95']}
       style={styles.container}
     >
-      <View style={styles.content}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <View style={styles.content}>
         {/* Round number */}
         <View style={styles.roundBadge}>
           <Text style={styles.roundLabel}>RONDA</Text>
@@ -86,12 +92,16 @@ export default function RoundStartScreen() {
           </LinearGradient>
         </Pressable>
       </View>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  safeArea: {
     flex: 1,
   },
   loadingContainer: {

@@ -3,6 +3,8 @@ import { View, StyleSheet, Pressable, Text, Vibration } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/context/GameContext';
 import { LinearGradient } from 'expo-linear-gradient';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { HapticFeedback } from '@/utils/haptics';
 import Animated, {
   useSharedValue,
   useAnimatedStyle,
@@ -23,6 +25,7 @@ export default function DebateScreen() {
   const pulseAnim = useSharedValue(1);
 
   const startTimer = () => {
+    HapticFeedback.medium();
     setIsStarted(true);
     intervalRef.current = setInterval(() => {
       setTimeLeft((prev) => {
@@ -31,8 +34,13 @@ export default function DebateScreen() {
             clearInterval(intervalRef.current);
           }
           setIsFinished(true);
+          HapticFeedback.error();
           Vibration.vibrate([0, 500, 200, 500]);
           return 0;
+        }
+        // Vibración suave cuando quedan 30 segundos
+        if (prev === 31) {
+          HapticFeedback.warning();
         }
         return prev - 1;
       });
@@ -78,21 +86,24 @@ export default function DebateScreen() {
   };
 
   const handleRestart = () => {
+    HapticFeedback.medium();
     if (intervalRef.current) {
       clearInterval(intervalRef.current);
     }
     setTimeLeft(DEBATE_TIME);
     setIsFinished(false);
+    setIsStarted(false);
     pulseAnim.value = 1;
-    startTimer();
   };
 
   const handleNewRound = () => {
+    HapticFeedback.success();
     startNewRound();
     router.replace('/round-start');
   };
 
   const handleEndGame = () => {
+    HapticFeedback.light();
     router.replace('/');
   };
 
@@ -103,7 +114,8 @@ export default function DebateScreen() {
       colors={['#1e1b4b', '#312e81', '#4c1d95']}
       style={styles.container}
     >
-      <View style={styles.content}>
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <View style={styles.content}>
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>DEBATE</Text>
@@ -209,6 +221,7 @@ export default function DebateScreen() {
           )}
         </View>
       </View>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
@@ -217,10 +230,14 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
+  safeArea: {
+    flex: 1,
+  },
   content: {
     flex: 1,
     paddingHorizontal: 24,
-    paddingVertical: 40,
+    paddingTop: 20,
+    paddingBottom: 20,
   },
   header: {
     alignItems: 'center',
@@ -254,9 +271,12 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
   timerContainer: {
-    flex: 1,
+    flexShrink: 1,
     alignItems: 'center',
     justifyContent: 'center',
+    minHeight: 250,
+    maxHeight: 350,
+    marginVertical: 20,
   },
   timerCircle: {
     width: 250,
@@ -310,6 +330,8 @@ const styles = StyleSheet.create({
   },
   buttonsContainer: {
     gap: 12,
+    paddingTop: 12,
+    paddingBottom: 8,
   },
   primaryButton: {
     width: '100%',

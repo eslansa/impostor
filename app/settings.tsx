@@ -3,8 +3,11 @@ import { View, StyleSheet, Pressable, Text, Switch, ScrollView } from 'react-nat
 import { useRouter } from 'expo-router';
 import { useGame } from '@/context/GameContext';
 import { LinearGradient } from 'expo-linear-gradient';
-import { CATEGORY_MAP, ALL_CATEGORIES } from '@/utils/gameLogic';
-import { CategoryKey } from '@/types/game';
+import { CATEGORIES_CONFIG } from '@/constants/categories';
+import { GameSettings, CategoryKey, SubcategoryKey } from '@/types/game';
+import { FontAwesome } from '@expo/vector-icons';
+import { SafeAreaView } from '@/components/ui/safe-area-view';
+import { HapticFeedback } from '@/utils/haptics';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -12,45 +15,137 @@ export default function SettingsScreen() {
 
   const [tempPlayers, setTempPlayers] = useState(numberOfPlayers);
   const [showHint, setShowHint] = useState(settings.showHintToImpostor);
-  const [selectedCategories, setSelectedCategories] = useState<CategoryKey[]>(settings.selectedCategories);
+  const [tempCategorySelections, setTempCategorySelections] = useState(settings.categorySelections);
+  const [expandedCategories, setExpandedCategories] = useState<Set<CategoryKey>>(new Set());
 
   const impostorCount = getImpostorCountForPlayers(tempPlayers);
 
   const handleIncrement = () => {
     if (tempPlayers < 8) {
+      HapticFeedback.light();
       setTempPlayers(tempPlayers + 1);
+    } else {
+      HapticFeedback.error();
     }
   };
 
   const handleDecrement = () => {
     if (tempPlayers > 4) {
+      HapticFeedback.light();
       setTempPlayers(tempPlayers - 1);
+    } else {
+      HapticFeedback.error();
     }
   };
 
   const handleHintToggle = (value: boolean) => {
+    HapticFeedback.selection();
     setShowHint(value);
   };
 
-  const handleCategoryToggle = (category: CategoryKey) => {
-    setSelectedCategories((prev) => {
-      if (prev.includes(category)) {
-        // No permitir deseleccionar si solo queda una
-        if (prev.length === 1) return prev;
-        return prev.filter((c) => c !== category);
+  const toggleCategoryExpansion = (categoryKey: CategoryKey) => {
+    HapticFeedback.light();
+    setExpandedCategories((prev) => {
+      const newSet = new Set(prev);
+      if (newSet.has(categoryKey)) {
+        newSet.delete(categoryKey);
       } else {
-        return [...prev, category];
+        newSet.add(categoryKey);
       }
+      return newSet;
+    });
+  };
+
+  const handleCategoryToggle = (categoryKey: CategoryKey) => {
+    HapticFeedback.selection();
+    setTempCategorySelections((prev) => {
+      const newSelections = { ...prev };
+      const currentSelection = newSelections[categoryKey];
+      
+      // Si desactivamos la categoría, desactivamos todas las subcategorías
+      // Si activamos la categoría, activamos todas las subcategorías
+      const newEnabled = !currentSelection.enabled;
+      
+      const newSubcategories: { [key in SubcategoryKey]?: boolean } = {};
+      const categoryConfig = CATEGORIES_CONFIG.find((cat) => cat.key === categoryKey);
+      
+      if (categoryConfig) {
+        categoryConfig.subcategories.forEach((subcategory) => {
+          newSubcategories[subcategory.key] = newEnabled;
+        });
+      }
+
+      newSelections[categoryKey] = {
+        ...currentSelection,
+        enabled: newEnabled,
+        subcategories: newSubcategories,
+      };
+
+      return newSelections;
+    });
+  };
+
+  const handleSubcategoryToggle = (categoryKey: CategoryKey, subcategoryKey: SubcategoryKey) => {
+    HapticFeedback.selection();
+    setTempCategorySelections((prev) => {
+      const newSelections = { ...prev };
+      const currentSelection = newSelections[categoryKey];
+      const currentSubcategoryEnabled = currentSelection.subcategories[subcategoryKey] !== false;
+
+      // Actualizar la subcategoría
+      const newSubcategories = {
+        ...currentSelection.subcategories,
+        [subcategoryKey]: !currentSubcategoryEnabled,
+      };
+
+      // Verificar si todas las subcategorías están desactivadas
+      const categoryConfig = CATEGORIES_CONFIG.find((cat) => cat.key === categoryKey);
+      let allDisabled = true;
+      if (categoryConfig) {
+        allDisabled = categoryConfig.subcategories.every(
+          (sub) => newSubcategories[sub.key] === false
+        );
+      }
+
+      newSelections[categoryKey] = {
+        ...currentSelection,
+        enabled: !allDisabled, // Si todas están desactivadas, desactivar la categoría
+        subcategories: newSubcategories,
+      };
+
+      return newSelections;
     });
   };
 
   const handleSave = () => {
+    HapticFeedback.success();
     setNumberOfPlayers(tempPlayers);
-    setSettings({
+    const newSettings: GameSettings = {
       showHintToImpostor: showHint,
-      selectedCategories: selectedCategories,
-    });
+      categorySelections: tempCategorySelections,
+    };
+    setSettings(newSettings);
     router.back();
+  };
+
+  // Calcular estadísticas
+  const getTotalEnabledSubcategories = () => {
+    let total = 0;
+    CATEGORIES_CONFIG.forEach((categoryConfig) => {
+      const selection = tempCategorySelections[categoryConfig.key];
+      if (selection.enabled) {
+        categoryConfig.subcategories.forEach((subcategory) => {
+          if (selection.subcategories[subcategory.key] !== false) {
+            total++;
+          }
+        });
+      }
+    });
+    return total;
+  };
+
+  const getTotalSubcategories = () => {
+    return CATEGORIES_CONFIG.reduce((sum, cat) => sum + cat.subcategories.length, 0);
   };
 
   return (
@@ -58,11 +153,12 @@ export default function SettingsScreen() {
       colors={['#1e1b4b', '#312e81', '#4c1d95']}
       style={styles.container}
     >
-      <ScrollView
-        style={styles.scrollView}
-        contentContainerStyle={styles.scrollContent}
-        showsVerticalScrollIndicator={false}
-      >
+      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
+        <ScrollView
+          style={styles.scrollView}
+          contentContainerStyle={styles.scrollContent}
+          showsVerticalScrollIndicator={false}
+        >
         <Text style={styles.title}>Ajustes</Text>
 
         {/* Jugadores */}
@@ -71,9 +167,10 @@ export default function SettingsScreen() {
           <View style={styles.playerSelector}>
             <Pressable
               onPress={handleDecrement}
-              style={[
+              style={({ pressed }) => [
                 styles.selectorButton,
                 tempPlayers <= 4 && styles.selectorButtonDisabled,
+                pressed && !(tempPlayers <= 4) && styles.selectorButtonPressed,
               ]}
               disabled={tempPlayers <= 4}
             >
@@ -86,9 +183,10 @@ export default function SettingsScreen() {
 
             <Pressable
               onPress={handleIncrement}
-              style={[
+              style={({ pressed }) => [
                 styles.selectorButton,
                 tempPlayers >= 8 && styles.selectorButtonDisabled,
+                pressed && !(tempPlayers >= 8) && styles.selectorButtonPressed,
               ]}
               disabled={tempPlayers >= 8}
             >
@@ -103,39 +201,84 @@ export default function SettingsScreen() {
           )}
         </View>
 
-        {/* Categorías */}
+        {/* Categorías y Subcategorías */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Categorias</Text>
+          <Text style={styles.sectionTitle}>Categorías y Subcategorías</Text>
           <Text style={styles.sectionDescription}>
-            Selecciona las categorias de palabras
+            Selecciona las categorías y subcategorías de palabras
           </Text>
-          <View style={styles.categoriesContainer}>
-            {ALL_CATEGORIES.map((categoryKey) => {
-              const isSelected = selectedCategories.includes(categoryKey);
-              const categoryData = CATEGORY_MAP[categoryKey];
-              return (
+          
+          {CATEGORIES_CONFIG.map((categoryConfig) => {
+            const categorySelection = tempCategorySelections[categoryConfig.key];
+            const isExpanded = expandedCategories.has(categoryConfig.key);
+            const enabledSubcategoriesCount = categoryConfig.subcategories.filter(
+              (sub) => categorySelection.subcategories[sub.key] !== false
+            ).length;
+
+            return (
+              <View key={categoryConfig.key} style={styles.categoryContainer}>
+                {/* Header de categoría */}
                 <Pressable
-                  key={categoryKey}
-                  onPress={() => handleCategoryToggle(categoryKey)}
-                  style={[
-                    styles.categoryChip,
-                    isSelected && styles.categoryChipSelected,
-                  ]}
+                  onPress={() => toggleCategoryExpansion(categoryConfig.key)}
+                  style={styles.categoryHeader}
                 >
-                  <Text
-                    style={[
-                      styles.categoryChipText,
-                      isSelected && styles.categoryChipTextSelected,
-                    ]}
-                  >
-                    {categoryData.name}
-                  </Text>
+                  <View style={styles.categoryHeaderLeft}>
+                    <FontAwesome
+                      name={isExpanded ? 'chevron-down' : 'chevron-right'}
+                      size={16}
+                      color="rgba(255, 255, 255, 0.6)"
+                      style={styles.expandIcon}
+                    />
+                    <Text style={styles.categoryHeaderText}>{categoryConfig.name}</Text>
+                    <Text style={styles.categoryCountBadge}>
+                      {enabledSubcategoriesCount}/{categoryConfig.subcategories.length}
+                    </Text>
+                  </View>
+                  <Switch
+                    value={categorySelection.enabled}
+                    onValueChange={() => handleCategoryToggle(categoryConfig.key)}
+                    trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
+                    thumbColor={categorySelection.enabled ? '#fff' : '#f4f3f4'}
+                    onTouchEnd={(e) => e.stopPropagation()}
+                  />
                 </Pressable>
-              );
-            })}
-          </View>
+
+                {/* Subcategorías expandidas */}
+                {isExpanded && categoryConfig.subcategories.map((subcategory) => {
+                  const isSubcategoryEnabled = categorySelection.subcategories[subcategory.key] !== false && categorySelection.enabled;
+                  
+                  return (
+                    <View key={subcategory.key} style={styles.subcategoryContainer}>
+                      <View style={styles.subcategoryContent}>
+                        <Text style={[
+                          styles.subcategoryName,
+                          !categorySelection.enabled && styles.subcategoryNameDisabled
+                        ]}>
+                          {subcategory.name}
+                        </Text>
+                        <Text style={[
+                          styles.subcategoryWordCount,
+                          !categorySelection.enabled && styles.subcategoryWordCountDisabled
+                        ]}>
+                          {subcategory.words.length} palabras
+                        </Text>
+                      </View>
+                      <Switch
+                        value={isSubcategoryEnabled}
+                    onValueChange={() => handleSubcategoryToggle(categoryConfig.key, subcategory.key)}
+                        trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
+                        thumbColor={isSubcategoryEnabled ? '#fff' : '#f4f3f4'}
+                        disabled={!categorySelection.enabled}
+                      />
+                    </View>
+                  );
+                })}
+              </View>
+            );
+          })}
+
           <Text style={styles.categoryCount}>
-            {selectedCategories.length} de {ALL_CATEGORIES.length} seleccionadas
+            {getTotalEnabledSubcategories()} de {getTotalSubcategories()} subcategorías activas
           </Text>
         </View>
 
@@ -146,7 +289,7 @@ export default function SettingsScreen() {
             <View style={styles.optionTextContainer}>
               <Text style={styles.optionLabel}>Pista para impostor</Text>
               <Text style={styles.optionDescription}>
-                El impostor ve la categoria de la palabra
+                El impostor ve la categoría de la palabra
               </Text>
             </View>
             <Switch
@@ -170,16 +313,23 @@ export default function SettingsScreen() {
           </LinearGradient>
         </Pressable>
 
-        <Pressable onPress={() => router.back()} style={styles.cancelButton}>
+        <Pressable onPress={() => {
+          HapticFeedback.light();
+          router.back();
+        }} style={styles.cancelButton}>
           <Text style={styles.cancelButtonText}>CANCELAR</Text>
         </Pressable>
-      </ScrollView>
+        </ScrollView>
+      </SafeAreaView>
     </LinearGradient>
   );
 }
 
 const styles = StyleSheet.create({
   container: {
+    flex: 1,
+  },
+  safeArea: {
     flex: 1,
   },
   scrollView: {
@@ -238,6 +388,10 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255, 255, 255, 0.1)',
     borderColor: 'rgba(255, 255, 255, 0.1)',
   },
+  selectorButtonPressed: {
+    opacity: 0.7,
+    transform: [{ scale: 0.95 }],
+  },
   selectorButtonText: {
     fontSize: 24,
     fontWeight: 'bold',
@@ -282,31 +436,75 @@ const styles = StyleSheet.create({
     letterSpacing: 1,
     includeFontPadding: false,
   },
-  categoriesContainer: {
+  categoryContainer: {
+    marginBottom: 12,
+    backgroundColor: 'rgba(255, 255, 255, 0.03)',
+    borderRadius: 12,
+    overflow: 'hidden',
+  },
+  categoryHeader: {
     flexDirection: 'row',
-    flexWrap: 'wrap',
-    gap: 10,
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    padding: 16,
   },
-  categoryChip: {
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    borderRadius: 20,
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.2)',
+  categoryHeaderLeft: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    flex: 1,
   },
-  categoryChipSelected: {
-    backgroundColor: 'rgba(16, 185, 129, 0.3)',
-    borderColor: '#10b981',
+  expandIcon: {
+    marginRight: 12,
   },
-  categoryChipText: {
-    fontSize: 14,
-    color: 'rgba(255, 255, 255, 0.6)',
+  categoryHeaderText: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: '#fff',
+    flex: 1,
     includeFontPadding: false,
   },
-  categoryChipTextSelected: {
-    color: '#fff',
-    fontWeight: '600',
+  categoryCountBadge: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    paddingHorizontal: 8,
+    paddingVertical: 4,
+    borderRadius: 8,
+    marginLeft: 8,
+    includeFontPadding: false,
+  },
+  subcategoryContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    paddingHorizontal: 16,
+    paddingVertical: 12,
+    paddingLeft: 44,
+    borderTopWidth: 1,
+    borderTopColor: 'rgba(255, 255, 255, 0.1)',
+    backgroundColor: 'rgba(0, 0, 0, 0.2)',
+  },
+  subcategoryContent: {
+    flex: 1,
+    marginRight: 12,
+  },
+  subcategoryName: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: 'rgba(255, 255, 255, 0.9)',
+    marginBottom: 4,
+    includeFontPadding: false,
+  },
+  subcategoryNameDisabled: {
+    color: 'rgba(255, 255, 255, 0.4)',
+  },
+  subcategoryWordCount: {
+    fontSize: 12,
+    color: 'rgba(255, 255, 255, 0.5)',
+    includeFontPadding: false,
+  },
+  subcategoryWordCountDisabled: {
+    color: 'rgba(255, 255, 255, 0.2)',
   },
   categoryCount: {
     fontSize: 12,

@@ -1,6 +1,7 @@
 import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Player, Round, GameSettings } from '@/types/game';
+import { Player, Round, GameSettings, CategoryKey, CategorySelection } from '@/types/game';
 import { createRound, getImpostorCount, ALL_CATEGORIES } from '@/utils/gameLogic';
+import { CATEGORIES_CONFIG } from '@/constants/categories';
 
 type GameContextType = {
   numberOfPlayers: number;
@@ -16,10 +17,33 @@ type GameContextType = {
   getImpostorCountForPlayers: (count: number) => number;
 };
 
-const defaultSettings: GameSettings = {
-  showHintToImpostor: false,
-  selectedCategories: [...ALL_CATEGORIES], // Todas las categorías por defecto
-};
+// Crear configuración por defecto con todas las categorías y subcategorías habilitadas
+function createDefaultSettings(): GameSettings {
+  const categorySelections: { [key in CategoryKey]: CategorySelection } = {} as any;
+  
+  ALL_CATEGORIES.forEach((categoryKey) => {
+    const categoryConfig = CATEGORIES_CONFIG.find((cat) => cat.key === categoryKey);
+    if (categoryConfig) {
+      const subcategories: { [key: string]: boolean } = {};
+      categoryConfig.subcategories.forEach((subcategory) => {
+        subcategories[subcategory.key] = true; // Todas habilitadas por defecto
+      });
+
+      categorySelections[categoryKey] = {
+        category: categoryKey,
+        enabled: true,
+        subcategories: subcategories as any,
+      };
+    }
+  });
+
+  return {
+    showHintToImpostor: false,
+    categorySelections,
+  };
+}
+
+const defaultSettings: GameSettings = createDefaultSettings();
 
 const GameContext = createContext<GameContextType | undefined>(undefined);
 
@@ -75,4 +99,5 @@ export function useGame() {
   }
   return context;
 }
+
 
