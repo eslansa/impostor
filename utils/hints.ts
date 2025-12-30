@@ -939,6 +939,186 @@ const HINT_GENERATORS: {
 
     return hints;
   },
+
+  transporte: (word: string) => {
+    const hints: string[] = [];
+    const lowerWord = word.toLowerCase();
+
+    // Transporte público
+    if (lowerWord.includes('guagua') || lowerWord.includes('almendrón') || lowerWord.includes('botero') || lowerWord.includes('máquina') || lowerWord.includes('camello') || lowerWord.includes('bicitaxi') || lowerWord.includes('cocotaxi') || lowerWord.includes('ómnibus') || lowerWord.includes('tren')) {
+      hints.push('Es un medio de transporte público');
+      hints.push('Se usa para moverse por la ciudad');
+    }
+
+    // Botella y pon
+    if (lowerWord.includes('botella') || lowerWord.includes('pon') || lowerWord.includes('coger botella')) {
+      hints.push('Expresión relacionada con conseguir transporte');
+      hints.push('Forma de conseguir un viaje');
+    }
+
+    // Vehículos particulares
+    if (lowerWord.includes('carro') || lowerWord.includes('auto') || lowerWord.includes('moto') || lowerWord.includes('bicicleta') || lowerWord.includes('yipi')) {
+      hints.push('Es un vehículo');
+      hints.push('Medio de transporte personal');
+    }
+
+    // Expresiones de transporte
+    if (lowerWord.includes('parada') || lowerWord.includes('terminal') || lowerWord.includes('estación') || lowerWord.includes('caminar') || lowerWord.includes('ir a pie')) {
+      hints.push('Relacionado con moverse o esperar transporte');
+      hints.push('Expresión sobre transporte');
+    }
+
+    if (hints.length === 0) {
+      hints.push('Relacionado con transporte en Cuba');
+      hints.push('Medio de moverse por la isla');
+    }
+
+    return hints;
+  },
+
+  tv_medios: (word: string) => {
+    const hints: string[] = [];
+    const lowerWord = word.toLowerCase();
+
+    // Programas de TV famosos
+    if (lowerWord.includes('vivir del cuento') || lowerWord.includes('pánfilo') || lowerWord.includes('chequera') || lowerWord.includes('tremenda corte') || lowerWord.includes('mesa redonda')) {
+      hints.push('Es un programa de TV cubano muy conocido');
+      hints.push('Programa popular en Cuba');
+    }
+
+    // Personajes de TV
+    if (lowerWord === 'pánfilo' || lowerWord === 'panfilo' || lowerWord === 'chequera' || lowerWord === 'tremenda' || lowerWord === 'nené' || lowerWord === 'candito') {
+      hints.push('Es un personaje de TV cubano');
+      hints.push('Personaje conocido de programas cubanos');
+    }
+
+    // Cadenas de TV
+    if (lowerWord.includes('cubavisión') || lowerWord.includes('cubavision') || lowerWord.includes('tele rebelde') || lowerWord.includes('canal educativo')) {
+      hints.push('Es una cadena de TV cubana');
+      hints.push('Canal de televisión de Cuba');
+    }
+
+    // Radio
+    if (lowerWord.includes('radio')) {
+      hints.push('Es una emisora de radio cubana');
+      hints.push('Estación de radio');
+    }
+
+    // Noticieros y programas informativos
+    if (lowerWord.includes('noticiero') || lowerWord.includes('mesa redonda') || lowerWord.includes('cuba dice')) {
+      hints.push('Programa informativo o noticiero');
+      hints.push('Programa de noticias');
+    }
+
+    if (hints.length === 0) {
+      hints.push('Es un programa o medio de comunicación cubano');
+      hints.push('Relacionado con TV o radio de Cuba');
+    }
+
+    return hints;
+  },
+
+  marcas: (word: string) => {
+    const hints: string[] = [];
+    const lowerWord = word.toLowerCase();
+
+    // Bebidas
+    if (lowerWord === 'cristal' || lowerWord === 'bucanero' || lowerWord === 'tropicola' || lowerWord === 'cachito' || lowerWord === 'tukola' || lowerWord === 'jupiña' || lowerWord.includes('ron')) {
+      hints.push('Es una marca de bebida cubana');
+      hints.push('Bebida muy conocida en Cuba');
+    }
+
+    // Cervezas
+    if (lowerWord === 'cristal' || lowerWord === 'bucanero' || lowerWord === 'mayabe') {
+      hints.push('Es una cerveza cubana');
+      hints.push('Marca de cerveza');
+    }
+
+    // Refrescos
+    if (lowerWord === 'tropicola' || lowerWord === 'cachito' || lowerWord === 'tukola' || lowerWord === 'jupiña') {
+      hints.push('Es un refresco cubano');
+      hints.push('Bebida gaseosa');
+    }
+
+    // Ron
+    if (lowerWord.includes('havana club') || lowerWord.includes('santiago') || lowerWord.includes('caney') || lowerWord.includes('ron')) {
+      hints.push('Es una marca de ron cubano');
+      hints.push('Ron muy conocido');
+    }
+
+    // Alimentos
+    if (lowerWord.includes('pan') || lowerWord.includes('galletas') || lowerWord.includes('helado') || lowerWord.includes('queso')) {
+      hints.push('Es un producto alimenticio');
+      hints.push('Marca de comida');
+    }
+
+    // Productos de limpieza
+    if (lowerWord.includes('detergente') || lowerWord.includes('jabón') || lowerWord.includes('pasta dental') || lowerWord.includes('colgate')) {
+      hints.push('Es un producto de limpieza o higiene');
+      hints.push('Artículo de aseo personal');
+    }
+
+    // Tabaco
+    if (lowerWord.includes('tabaco') || lowerWord.includes('habano') || lowerWord.includes('cigarro')) {
+      hints.push('Es un producto de tabaco');
+      hints.push('Relacionado con tabaco cubano');
+    }
+
+    if (hints.length === 0) {
+      hints.push('Es una marca o producto cubano');
+      hints.push('Producto conocido en Cuba');
+    }
+
+    return hints;
+  },
+
+  comercios: (word: string) => {
+    const hints: string[] = [];
+    const lowerWord = word.toLowerCase();
+
+    // Tiendas
+    if (lowerWord === 'bodega' || lowerWord === 'shopping' || lowerWord.includes('tienda') || lowerWord === 'cimex' || lowerWord === 'trd' || lowerWord === 'mercado' || lowerWord === 'agromercado') {
+      hints.push('Es un lugar donde se compra');
+      hints.push('Tienda o establecimiento comercial');
+    }
+
+    // Restaurantes
+    if (lowerWord === 'paladar' || lowerWord.includes('restaurante') || lowerWord.includes('cafetería') || lowerWord.includes('pizzería') || lowerWord === 'coppelia' || lowerWord === 'la rampa') {
+      hints.push('Es un lugar para comer');
+      hints.push('Restaurante o lugar gastronómico');
+    }
+
+    // Servicios
+    if (lowerWord.includes('barbería') || lowerWord.includes('peluquería') || lowerWord.includes('taller') || lowerWord.includes('zapatería') || lowerWord.includes('lavandería')) {
+      hints.push('Es un lugar de servicios');
+      hints.push('Establecimiento de servicios');
+    }
+
+    // Mercados
+    if (lowerWord.includes('mercado') || lowerWord === 'feria' || lowerWord.includes('agropecuario') || lowerWord.includes('artesanía')) {
+      hints.push('Es un mercado o feria');
+      hints.push('Lugar de compra-venta');
+    }
+
+    // Servicios de salud y finanzas
+    if (lowerWord === 'farmacia' || lowerWord === 'hospital' || lowerWord === 'clínica' || lowerWord === 'banco' || lowerWord === 'cadeca' || lowerWord.includes('casa de cambio')) {
+      hints.push('Es un servicio público o privado');
+      hints.push('Establecimiento de servicios especializados');
+    }
+
+    // Alojamiento
+    if (lowerWord === 'hotel' || lowerWord.includes('casa particular')) {
+      hints.push('Es un lugar de alojamiento');
+      hints.push('Lugar para hospedarse');
+    }
+
+    if (hints.length === 0) {
+      hints.push('Es un comercio o negocio cubano');
+      hints.push('Establecimiento comercial');
+    }
+
+    return hints;
+  },
 };
 
 // Generar una pista específica para una palabra
@@ -977,6 +1157,10 @@ export function generateHint(word: string, categoryName: string): string {
     else if (lowerCategoryName.includes('naturaleza')) categoryKey = 'naturaleza';
     else if (lowerCategoryName.includes('malas') || lowerCategoryName.includes('palabras')) categoryKey = 'malas_palabras';
     else if (lowerCategoryName.includes('cantante')) categoryKey = 'cantantes';
+    else if (lowerCategoryName.includes('transporte')) categoryKey = 'transporte';
+    else if (lowerCategoryName.includes('tv') || lowerCategoryName.includes('medios') || lowerCategoryName.includes('programa')) categoryKey = 'tv_medios';
+    else if (lowerCategoryName.includes('marca') || lowerCategoryName.includes('producto')) categoryKey = 'marcas';
+    else if (lowerCategoryName.includes('comercio') || lowerCategoryName.includes('negocio')) categoryKey = 'comercios';
   }
   
   // Recopilar todas las pistas posibles
@@ -1058,6 +1242,10 @@ export function generateMultipleHints(word: string, categoryName: string, count:
     else if (lowerCategoryName.includes('naturaleza')) categoryKey = 'naturaleza';
     else if (lowerCategoryName.includes('malas') || lowerCategoryName.includes('palabras')) categoryKey = 'malas_palabras';
     else if (lowerCategoryName.includes('cantante')) categoryKey = 'cantantes';
+    else if (lowerCategoryName.includes('transporte')) categoryKey = 'transporte';
+    else if (lowerCategoryName.includes('tv') || lowerCategoryName.includes('medios') || lowerCategoryName.includes('programa')) categoryKey = 'tv_medios';
+    else if (lowerCategoryName.includes('marca') || lowerCategoryName.includes('producto')) categoryKey = 'marcas';
+    else if (lowerCategoryName.includes('comercio') || lowerCategoryName.includes('negocio')) categoryKey = 'comercios';
   }
   
   if (categoryKey && HINT_GENERATORS[categoryKey]) {

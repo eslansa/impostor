@@ -286,6 +286,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.4,
     shadowRadius: 8,
     elevation: 8,
+    marginBottom: 10,
   },
   buttonGradient: {
     paddingVertical: 18,

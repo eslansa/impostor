@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, Pressable, Text, Switch, ScrollView } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/context/GameContext';
@@ -15,15 +15,41 @@ export default function SettingsScreen() {
 
   const [tempPlayers, setTempPlayers] = useState(numberOfPlayers);
   const [showHint, setShowHint] = useState(settings.showHintToImpostor);
+  const [enableSurprises, setEnableSurprises] = useState(settings.enableSurprises);
   const [tempCategorySelections, setTempCategorySelections] = useState(settings.categorySelections);
   const [expandedCategories, setExpandedCategories] = useState<Set<CategoryKey>>(new Set());
+  
+  // Calcular el número de impostores por defecto para más de 5 jugadores
+  const getDefaultImpostorCount = (playerCount: number) => playerCount >= 6 ? 2 : 1;
+  const [tempCustomImpostorCount, setTempCustomImpostorCount] = useState(() => {
+    // Inicializar con el valor guardado o el valor por defecto
+    return settings.customImpostorCount ?? getDefaultImpostorCount(numberOfPlayers);
+  });
+
+  // Actualizar el contador de impostores cuando cambia el número de jugadores
+  useEffect(() => {
+    if (tempPlayers > 5) {
+      // Si no hay un valor personalizado guardado y estamos aumentando jugadores, usar el valor por defecto
+      if (settings.customImpostorCount === undefined && tempPlayers > numberOfPlayers) {
+        setTempCustomImpostorCount(2);
+      }
+      // Asegurar que el valor personalizado no exceda el número de jugadores - 1
+      const maxImpostors = tempPlayers - 1;
+      setTempCustomImpostorCount((prev) => Math.max(1, Math.min(prev, maxImpostors)));
+    }
+  }, [tempPlayers, settings.customImpostorCount, numberOfPlayers]);
 
   const impostorCount = getImpostorCountForPlayers(tempPlayers);
 
   const handleIncrement = () => {
     if (tempPlayers < 8) {
       HapticFeedback.light();
-      setTempPlayers(tempPlayers + 1);
+      const newCount = tempPlayers + 1;
+      setTempPlayers(newCount);
+      // Si ahora hay más de 5 jugadores y no hay un valor personalizado, establecer el valor por defecto
+      if (newCount > 5 && settings.customImpostorCount === undefined) {
+        setTempCustomImpostorCount(2);
+      }
     } else {
       HapticFeedback.error();
     }
@@ -38,9 +64,32 @@ export default function SettingsScreen() {
     }
   };
 
+  const handleImpostorIncrement = () => {
+    if (tempCustomImpostorCount < tempPlayers - 1) {
+      HapticFeedback.light();
+      setTempCustomImpostorCount(tempCustomImpostorCount + 1);
+    } else {
+      HapticFeedback.error();
+    }
+  };
+
+  const handleImpostorDecrement = () => {
+    if (tempCustomImpostorCount > 1) {
+      HapticFeedback.light();
+      setTempCustomImpostorCount(tempCustomImpostorCount - 1);
+    } else {
+      HapticFeedback.error();
+    }
+  };
+
   const handleHintToggle = (value: boolean) => {
     HapticFeedback.selection();
     setShowHint(value);
+  };
+
+  const handleSurprisesToggle = (value: boolean) => {
+    HapticFeedback.selection();
+    setEnableSurprises(value);
   };
 
   const toggleCategoryExpansion = (categoryKey: CategoryKey) => {
@@ -123,6 +172,9 @@ export default function SettingsScreen() {
     const newSettings: GameSettings = {
       showHintToImpostor: showHint,
       categorySelections: tempCategorySelections,
+      // Solo guardar customImpostorCount si hay más de 5 jugadores
+      customImpostorCount: tempPlayers > 5 ? tempCustomImpostorCount : undefined,
+      enableSurprises: enableSurprises,
     };
     setSettings(newSettings);
     router.back();
@@ -200,6 +252,46 @@ export default function SettingsScreen() {
             </View>
           )}
         </View>
+
+        {/* Selector de impostores personalizado (solo cuando hay más de 5 jugadores) */}
+        {tempPlayers > 5 && (
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Número de Impostores</Text>
+            <Text style={styles.sectionDescription}>
+              Configura cuántos impostores habrá en la partida
+            </Text>
+            <View style={styles.playerSelector}>
+              <Pressable
+                onPress={handleImpostorDecrement}
+                style={({ pressed }) => [
+                  styles.selectorButton,
+                  tempCustomImpostorCount <= 1 && styles.selectorButtonDisabled,
+                  pressed && !(tempCustomImpostorCount <= 1) && styles.selectorButtonPressed,
+                ]}
+                disabled={tempCustomImpostorCount <= 1}
+              >
+                <Text style={styles.selectorButtonText}>-</Text>
+              </Pressable>
+
+              <View style={styles.selectorValue}>
+                <Text style={styles.selectorValueText}>{tempCustomImpostorCount}</Text>
+              </View>
+
+              <Pressable
+                onPress={handleImpostorIncrement}
+                style={({ pressed }) => [
+                  styles.selectorButton,
+                  tempCustomImpostorCount >= tempPlayers - 1 && styles.selectorButtonDisabled,
+                  pressed && !(tempCustomImpostorCount >= tempPlayers - 1) && styles.selectorButtonPressed,
+                ]}
+                disabled={tempCustomImpostorCount >= tempPlayers - 1}
+              >
+                <Text style={styles.selectorButtonText}>+</Text>
+              </Pressable>
+            </View>
+            <Text style={styles.selectorHint}>1 - {tempPlayers - 1} impostores</Text>
+          </View>
+        )}
 
         {/* Categorías y Subcategorías */}
         <View style={styles.section}>
@@ -297,6 +389,21 @@ export default function SettingsScreen() {
               onValueChange={handleHintToggle}
               trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
               thumbColor={showHint ? '#fff' : '#f4f3f4'}
+            />
+          </View>
+          
+          <View style={[styles.optionRow, { marginTop: 16 }]}>
+            <View style={styles.optionTextContainer}>
+              <Text style={styles.optionLabel}>Sorpresas cada 7 rondas</Text>
+              <Text style={styles.optionDescription}>
+                Activa rondas especiales con reglas diferentes cada 7 rondas
+              </Text>
+            </View>
+            <Switch
+              value={enableSurprises}
+              onValueChange={handleSurprisesToggle}
+              trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
+              thumbColor={enableSurprises ? '#fff' : '#f4f3f4'}
             />
           </View>
         </View>

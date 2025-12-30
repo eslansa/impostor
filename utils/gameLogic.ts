@@ -21,10 +21,14 @@ export const CATEGORY_MAP: { [key in CategoryKey]: { name: string } } = {
   apodos: { name: 'Apodos y sobrenombres' },
   juegos: { name: 'Juegos tradicionales' },
   cantantes: { name: 'Cantantes cubanos' },
+  transporte: { name: 'Transporte cubano' },
+  tv_medios: { name: 'Programas de TV y medios' },
+  marcas: { name: 'Marcas y productos cubanos' },
+  comercios: { name: 'Comercios y negocios' },
 };
 
 // Lista de todas las categorías disponibles
-export const ALL_CATEGORIES: CategoryKey[] = ['jerga', 'influencers', 'comida', 'lugares', 'cosas', 'deportes', 'historia', 'tradiciones', 'naturaleza', 'malas_palabras', 'dichos_refranes', 'escuelas', 'economia', 'apodos', 'juegos', 'cantantes'];
+export const ALL_CATEGORIES: CategoryKey[] = ['jerga', 'influencers', 'comida', 'lugares', 'cosas', 'deportes', 'historia', 'tradiciones', 'naturaleza', 'malas_palabras', 'dichos_refranes', 'escuelas', 'economia', 'apodos', 'juegos', 'cantantes', 'transporte', 'tv_medios', 'marcas', 'comercios'];
 
 // Obtener todas las palabras disponibles basadas en la configuración de categorías
 function getAvailableWords(settings: GameSettings): { words: string[]; categoryName: string }[] {
@@ -104,9 +108,47 @@ function shuffleArray<T>(array: T[]): T[] {
 }
 
 // Calcular número de impostores basado en cantidad de jugadores
-export function getImpostorCount(playerCount: number): number {
-  // 6+ jugadores = 2 impostores, menos de 6 = 1 impostor
+export function getImpostorCount(playerCount: number, settings?: GameSettings): number {
+  // Si hay más de 5 jugadores y hay un número personalizado configurado, usarlo
+  if (playerCount > 5 && settings?.customImpostorCount !== undefined) {
+    // Validar que el número personalizado sea válido (al menos 1 y menos que el número de jugadores)
+    const customCount = Math.max(1, Math.min(settings.customImpostorCount, playerCount - 1));
+    return customCount;
+  }
+  
+  // Lógica por defecto: 6+ jugadores = 2 impostores, menos de 6 = 1 impostor
   return playerCount >= 6 ? 2 : 1;
+}
+
+// Tipos de sorpresas disponibles
+export type SurpriseType = 
+  | 'all_impostors'           // Todos impostores
+  | 'no_impostors'            // Nadie impostor
+  | 'all_different_words'     // Todos diferentes palabras
+  | 'all_different_2_impostors' // Todos diferentes palabras y 2 impostores
+  | 'all_same_word'           // Todos la misma palabra (nadie impostor pero confusión)
+  | 'half_impostors'          // Mitad impostores, mitad normales
+  | 'one_not_impostor'        // Solo 1 no impostor (todos menos uno son impostores)
+  | 'related_words';          // Palabras relacionadas (misma categoría, diferentes palabras)
+
+// Determinar tipo de sorpresa aleatoria
+function getRandomSurpriseType(): SurpriseType {
+  const surprises: SurpriseType[] = [
+    'all_impostors',
+    'no_impostors',
+    'all_different_words',
+    'all_different_2_impostors',
+    'all_same_word',
+    'half_impostors',
+    'one_not_impostor',
+    'related_words',
+  ];
+  return surprises[Math.floor(Math.random() * surprises.length)];
+}
+
+// Verificar si es una ronda de sorpresa (cada 7 rondas)
+function isSurpriseRound(roundNumber: number): boolean {
+  return roundNumber > 0 && roundNumber % 7 === 0;
 }
 
 export function createRound(
@@ -114,14 +156,127 @@ export function createRound(
   roundNumber: number,
   settings: GameSettings
 ): Round {
-  const { word: normalWord, category } = getRandomWordWithCategory(settings);
   const impostorWord = 'IMPOSTOR';
-  const impostorCount = getImpostorCount(players.length);
+  let normalWord: string;
+  let category: string;
+  let impostorCount: number;
+  let impostorPlayerIds: string[] = [];
+  let surpriseType: SurpriseType | null = null;
 
-  // Seleccionar índices de impostores al azar
-  const shuffledIndices = shuffleArray([...Array(players.length).keys()]);
-  const impostorIndices = shuffledIndices.slice(0, impostorCount);
-  const impostorPlayerIds = impostorIndices.map((idx) => players[idx].id);
+  // Verificar si es ronda de sorpresa
+  const isSurprise = settings.enableSurprises && isSurpriseRound(roundNumber);
+  
+  if (isSurprise) {
+    surpriseType = getRandomSurpriseType();
+  }
+
+  // Aplicar lógica de sorpresa o normal
+  if (isSurprise && surpriseType) {
+    const availableWords = getAvailableWords(settings);
+    const allWords = availableWords.flatMap(cat => cat.words);
+    
+    switch (surpriseType) {
+      case 'all_impostors':
+        // Todos impostores
+        normalWord = allWords[Math.floor(Math.random() * allWords.length)] || 'PALABRA';
+        category = 'Sorpresa';
+        impostorCount = players.length;
+        impostorPlayerIds = players.map(p => p.id);
+        break;
+
+      case 'no_impostors':
+        // Nadie impostor
+        const { word: word1, category: cat1 } = getRandomWordWithCategory(settings);
+        normalWord = word1;
+        category = cat1;
+        impostorCount = 0;
+        impostorPlayerIds = [];
+        break;
+
+      case 'all_different_words':
+        // Todos diferentes palabras
+        const shuffledWords = shuffleArray([...allWords]);
+        normalWord = shuffledWords[0] || 'PALABRA';
+        category = 'Sorpresa';
+        impostorCount = 0;
+        impostorPlayerIds = [];
+        break;
+
+      case 'all_different_2_impostors':
+        // Todos diferentes palabras y 2 impostores
+        const shuffledWords2 = shuffleArray([...allWords]);
+        normalWord = shuffledWords2[0] || 'PALABRA';
+        category = 'Sorpresa';
+        impostorCount = Math.min(2, players.length - 1);
+        const shuffledIndices2 = shuffleArray([...Array(players.length).keys()]);
+        impostorPlayerIds = shuffledIndices2.slice(0, impostorCount).map(idx => players[idx].id);
+        break;
+
+      case 'all_same_word':
+        // Todos la misma palabra (nadie impostor pero confusión)
+        const { word: word2, category: cat2 } = getRandomWordWithCategory(settings);
+        normalWord = word2;
+        category = cat2;
+        impostorCount = 0;
+        impostorPlayerIds = [];
+        break;
+
+      case 'half_impostors':
+        // Mitad impostores, mitad normales
+        const { word: word3, category: cat3 } = getRandomWordWithCategory(settings);
+        normalWord = word3;
+        category = cat3;
+        impostorCount = Math.floor(players.length / 2);
+        const shuffledIndices3 = shuffleArray([...Array(players.length).keys()]);
+        impostorPlayerIds = shuffledIndices3.slice(0, impostorCount).map(idx => players[idx].id);
+        break;
+
+      case 'one_not_impostor':
+        // Solo 1 no impostor (todos menos uno son impostores)
+        const { word: word4, category: cat4 } = getRandomWordWithCategory(settings);
+        normalWord = word4;
+        category = cat4;
+        impostorCount = Math.max(1, players.length - 1);
+        const shuffledIndices4 = shuffleArray([...Array(players.length).keys()]);
+        impostorPlayerIds = shuffledIndices4.slice(0, impostorCount).map(idx => players[idx].id);
+        break;
+
+      case 'related_words':
+        // Palabras relacionadas (misma categoría, diferentes palabras)
+        const randomCategory = availableWords[Math.floor(Math.random() * availableWords.length)];
+        if (randomCategory && randomCategory.words.length > 0) {
+          const categoryWords = shuffleArray([...randomCategory.words]);
+          normalWord = categoryWords[0] || 'PALABRA';
+          category = randomCategory.categoryName;
+          impostorCount = 0;
+          impostorPlayerIds = [];
+        } else {
+          const { word: word5, category: cat5 } = getRandomWordWithCategory(settings);
+          normalWord = word5;
+          category = cat5;
+          impostorCount = 0;
+          impostorPlayerIds = [];
+        }
+        break;
+
+      default:
+        // Fallback a ronda normal
+        const { word: wordDefault, category: catDefault } = getRandomWordWithCategory(settings);
+        normalWord = wordDefault;
+        category = catDefault;
+        impostorCount = getImpostorCount(players.length, settings);
+        const shuffledIndicesDefault = shuffleArray([...Array(players.length).keys()]);
+        impostorPlayerIds = shuffledIndicesDefault.slice(0, impostorCount).map(idx => players[idx].id);
+    }
+  } else {
+    // Ronda normal
+    const { word: wordNormal, category: catNormal } = getRandomWordWithCategory(settings);
+    normalWord = wordNormal;
+    category = catNormal;
+    impostorCount = getImpostorCount(players.length, settings);
+    const shuffledIndices = shuffleArray([...Array(players.length).keys()]);
+    impostorPlayerIds = shuffledIndices.slice(0, impostorCount).map(idx => players[idx].id);
+  }
 
   // Generar pista específica para el impostor basada en la palabra real
   const impostorHint = settings.showHintToImpostor 
@@ -129,15 +284,72 @@ export function createRound(
     : undefined;
 
   // Crear los jugadores con sus palabras asignadas
-  const playersWithWords: Player[] = players.map((player) => {
-    const isImpostor = impostorPlayerIds.includes(player.id);
-    return {
-      ...player,
-      isImpostor,
-      word: isImpostor ? impostorWord : normalWord,
-      hint: isImpostor ? impostorHint : undefined,
-    };
-  });
+  let playersWithWords: Player[] = [];
+  
+  if (isSurprise && surpriseType === 'all_different_words') {
+    // Todos diferentes palabras
+    const shuffledWords = shuffleArray([...getAvailableWords(settings).flatMap(cat => cat.words)]);
+    playersWithWords = players.map((player, index) => {
+      const word = shuffledWords[index % shuffledWords.length] || normalWord;
+      return {
+        ...player,
+        isImpostor: false,
+        word: word,
+        hint: undefined,
+      };
+    });
+  } else if (isSurprise && surpriseType === 'all_different_2_impostors') {
+    // Todos diferentes palabras y 2 impostores
+    const shuffledWords = shuffleArray([...getAvailableWords(settings).flatMap(cat => cat.words)]);
+    playersWithWords = players.map((player, index) => {
+      const isImpostor = impostorPlayerIds.includes(player.id);
+      const word = isImpostor 
+        ? impostorWord 
+        : (shuffledWords[index % shuffledWords.length] || normalWord);
+      return {
+        ...player,
+        isImpostor,
+        word: word,
+        hint: isImpostor ? impostorHint : undefined,
+      };
+    });
+  } else if (isSurprise && surpriseType === 'related_words') {
+    // Palabras relacionadas (misma categoría)
+    const randomCategory = getAvailableWords(settings)[Math.floor(Math.random() * getAvailableWords(settings).length)];
+    if (randomCategory && randomCategory.words.length >= players.length) {
+      const categoryWords = shuffleArray([...randomCategory.words]);
+      playersWithWords = players.map((player, index) => {
+        return {
+          ...player,
+          isImpostor: false,
+          word: categoryWords[index % categoryWords.length] || normalWord,
+          hint: undefined,
+        };
+      });
+    } else {
+      // Fallback si no hay suficientes palabras
+      playersWithWords = players.map((player) => {
+        const isImpostor = impostorPlayerIds.includes(player.id);
+        return {
+          ...player,
+          isImpostor,
+          word: isImpostor ? impostorWord : normalWord,
+          hint: isImpostor ? impostorHint : undefined,
+        };
+      });
+    }
+  } else {
+    // Ronda normal o otras sorpresas
+    playersWithWords = players.map((player) => {
+      const isImpostor = impostorPlayerIds.includes(player.id);
+      return {
+        ...player,
+        isImpostor,
+        word: isImpostor ? impostorWord : normalWord,
+        hint: isImpostor ? impostorHint : undefined,
+      };
+    });
+  }
 
   // Mezclar el orden de los jugadores DESPUÉS de asignar palabras
   const shuffledPlayers = shuffleArray(playersWithWords);

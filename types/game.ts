@@ -16,7 +16,7 @@ export type Round = {
   impostorCount: number;
 };
 
-export type CategoryKey = 'jerga' | 'influencers' | 'comida' | 'lugares' | 'cosas' | 'deportes' | 'historia' | 'tradiciones' | 'naturaleza' | 'malas_palabras' | 'dichos_refranes' | 'escuelas' | 'economia' | 'apodos' | 'juegos' | 'cantantes';
+export type CategoryKey = 'jerga' | 'influencers' | 'comida' | 'lugares' | 'cosas' | 'deportes' | 'historia' | 'tradiciones' | 'naturaleza' | 'malas_palabras' | 'dichos_refranes' | 'escuelas' | 'economia' | 'apodos' | 'juegos' | 'cantantes' | 'transporte' | 'tv_medios' | 'marcas' | 'comercios';
 
 export type SubcategoryKey =
   // Jerga
@@ -50,7 +50,15 @@ export type SubcategoryKey =
   // Juegos
   | 'juegos_calle' | 'juegos_mesa' | 'juegos_infantiles'
   // Cantantes
-  | 'cantantes_salsa_timba' | 'cantantes_reggaeton' | 'cantantes_trova_bolero' | 'cantantes_clasicos';
+  | 'cantantes_salsa_timba' | 'cantantes_reggaeton' | 'cantantes_trova_bolero' | 'cantantes_clasicos'
+  // Transporte
+  | 'transporte_publico' | 'transporte_vehiculos' | 'transporte_expresiones'
+  // TV y Medios
+  | 'tv_medios_programas' | 'tv_medios_personajes' | 'tv_medios_cadenas'
+  // Marcas
+  | 'marcas_bebidas' | 'marcas_alimentos' | 'marcas_productos'
+  // Comercios
+  | 'comercios_tiendas' | 'comercios_restaurantes' | 'comercios_servicios' | 'comercios_mercados';
 
 export type CategoryConfig = {
   key: CategoryKey;
@@ -75,6 +83,8 @@ export type GameSettings = {
   categorySelections: {
     [key in CategoryKey]: CategorySelection;
   };
+  customImpostorCount?: number; // Número personalizado de impostores cuando hay más de 5 jugadores
+  enableSurprises: boolean; // Activar sorpresas cada 7 rondas
 };
 
 export type GameState = {

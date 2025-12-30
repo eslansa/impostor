@@ -1563,6 +1563,199 @@ export const CANTANTES_CUBANOS = [
   'septeto habanero',
 ];
 
+// Transporte cubano
+export const TRANSPORTE_CUBANO = [
+  // Transporte público
+  'guagua',
+  'almendrón',
+  'botero',
+  'máquina',
+  'camello',
+  'yipitero',
+  'rutero',
+  'bicitaxi',
+  'cocotaxi',
+  'carro particular',
+  'botella',
+  'pon',
+  'dar pon',
+  'coger botella',
+  'ómnibus',
+  'tren',
+  'ferrocarril',
+  'lancha',
+  'catamarán',
+  // Vehículos
+  'yipi',
+  'carro',
+  'auto',
+  'moto',
+  'motocicleta',
+  'bicicleta',
+  'bici',
+  // Expresiones
+  'ir a pie',
+  'caminar',
+  'estar en la parada',
+  'hacer cola para la guagua',
+  'parada de guagua',
+  'terminal de ómnibus',
+  'estación de tren',
+];
+
+// Programas de TV y medios cubanos
+export const TV_MEDIOS_CUBANOS = [
+  // Programas de TV
+  'vivir del cuento',
+  'pánfilo',
+  'chequera',
+  'la tremenda corte',
+  'san nicolás del peladero',
+  'de tu lado',
+  'pasaje a lo desconocido',
+  'noticiero',
+  'mesa redonda',
+  'con 2 que se quieran',
+  'buena suerte',
+  'sabado del humor',
+  'sábado del humor',
+  'detras de la verdad',
+  'detrás de la verdad',
+  'cuadro a cuadro',
+  'cuba dice',
+  // Personajes de TV
+  'tremenda',
+  'nené',
+  'candito',
+  'panchito',
+  'resoplido',
+  'panfilo',
+  'chequera',
+  // Cadenas y medios
+  'cubavisión',
+  'cubavision',
+  'tele rebelde',
+  'canal educativo',
+  'canal educacional',
+  'radio reloj',
+  'radio progreso',
+  'radio taíno',
+  'radio taino',
+  'radio habana cuba',
+  'radio rebelde',
+  'radio cmbf',
+  'radio enciclopedia',
+  'telesur',
+  'multivision',
+];
+
+// Marcas y productos cubanos
+export const MARCAS_PRODUCTOS_CUBANOS = [
+  // Bebidas
+  'cristal',
+  'bucanero',
+  'mayabe',
+  'tropicola',
+  'cachito',
+  'tukola',
+  'jupiña',
+  'ciego montero',
+  'ciego de ávila',
+  'tu cola',
+  'refresco',
+  'malta',
+  'pru',
+  // Alimentos
+  'pan bimbo',
+  'pan de flauta',
+  'pan de manteca',
+  'galletas cracker',
+  'galletas maría',
+  'helado coppelia',
+  'queso gouda',
+  'queso crema',
+  'queso',
+  // Productos de limpieza
+  'detergente ace',
+  'jabón candado',
+  'jabón de cuaba',
+  'pasta dental',
+  'colgate',
+  'jabón',
+  'detergente',
+  // Tabaco y ron
+  'cigarro popular',
+  'tabaco',
+  'habano',
+  'ron havana club',
+  'ron santiago',
+  'ron caney',
+  'havana club',
+  'santiago',
+  'caney',
+  // Otros productos
+  'aceite',
+  'azúcar',
+  'sal',
+  'café',
+  'café cubita',
+  'cubita',
+];
+
+// Comercios y negocios cubanos
+export const COMERCIOS_NEGOCIOS_CUBANOS = [
+  // Tiendas
+  'bodega',
+  'shopping',
+  'tienda en mlc',
+  'cimex',
+  'trd',
+  'mercado',
+  'agromercado',
+  'placita',
+  'kiosco',
+  'carrito',
+  'tienda',
+  'supermercado',
+  'minimarket',
+  // Restaurantes
+  'paladar',
+  'restaurante estatal',
+  'cafetería',
+  'pizzería',
+  'heladería',
+  'coppelia',
+  'la rampa',
+  'restaurante',
+  'comedor',
+  // Servicios
+  'barbería',
+  'peluquería',
+  'taller',
+  'carpintería',
+  'zapatería',
+  'sastrería',
+  'lavandería',
+  'fotocopiadora',
+  'taller de reparación',
+  // Mercados
+  'mercado de cuentapropista',
+  'mercado agropecuario',
+  'mercado de artesanía',
+  'feria',
+  'mercado artesanal',
+  'mercado libre',
+  // Otros comercios
+  'farmacia',
+  'hospital',
+  'clínica',
+  'banco',
+  'cadeca',
+  'casa de cambio',
+  'hotel',
+  'casa particular',
+];
+
 // Función para obtener todas las palabras
 export const getAllWords = () => [
   ...JERGA_CUBANA,
@@ -1581,6 +1774,10 @@ export const getAllWords = () => [
   ...APODOS_SOBRENOMBRES_CUBANOS,
   ...JUEGOS_TRADICIONALES_CUBANOS,
   ...CANTANTES_CUBANOS,
+  ...TRANSPORTE_CUBANO,
+  ...TV_MEDIOS_CUBANOS,
+  ...MARCAS_PRODUCTOS_CUBANOS,
+  ...COMERCIOS_NEGOCIOS_CUBANOS,
 ];
 
 // Función para obtener palabras por categoría
@@ -1618,6 +1815,14 @@ export const getWordsByCategory = (category: string) => {
       return JUEGOS_TRADICIONALES_CUBANOS;
     case 'cantantes':
       return CANTANTES_CUBANOS;
+    case 'transporte':
+      return TRANSPORTE_CUBANO;
+    case 'tv_medios':
+      return TV_MEDIOS_CUBANOS;
+    case 'marcas':
+      return MARCAS_PRODUCTOS_CUBANOS;
+    case 'comercios':
+      return COMERCIOS_NEGOCIOS_CUBANOS;
     default:
       return getAllWords();
   }

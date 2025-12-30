@@ -17,7 +17,11 @@ import {
   ECONOMIA_PROBLEMAS_CUBANOS,
   APODOS_SOBRENOMBRES_CUBANOS,
   JUEGOS_TRADICIONALES_CUBANOS,
-  CANTANTES_CUBANOS
+  CANTANTES_CUBANOS,
+  TRANSPORTE_CUBANO,
+  TV_MEDIOS_CUBANOS,
+  MARCAS_PRODUCTOS_CUBANOS,
+  COMERCIOS_NEGOCIOS_CUBANOS
 } from './words';
 
 // Dividir las palabras en subcategorías lógicas
@@ -375,6 +379,95 @@ export const CATEGORIES_CONFIG: CategoryConfig[] = [
         key: 'cantantes_clasicos',
         name: 'Clásicos e históricos',
         words: ['bola de nieve', 'ignacio villa', 'rita montaner', 'esther borja', 'barbarito diez', 'barbarito díez', 'blanca rosa gil', 'fernando albuerne', 'abelardo barroso', 'miguelito cuni', 'miguelito cuní', 'miguelito valdes', 'miguelito valdés', 'orlando vallejo', 'compay segundo', 'ibrahim ferrer', 'eliades ochoa', 'rubén gonzalez', 'rubén gonzález', 'pio leyva', 'pío leyva', 'cheo feliciano', 'ismael rivera', 'hector lavoe', 'héctor lavoe', 'tito puente', 'machito', 'celia y johnny', 'sonora matancera', 'la sonora matancera', 'trio matamoros', 'trío matamoros', 'sexteto habanero', 'septeto habanero'],
+      },
+    ],
+  },
+  {
+    key: 'transporte',
+    name: 'Transporte cubano',
+    subcategories: [
+      {
+        key: 'transporte_publico',
+        name: 'Transporte público',
+        words: ['guagua', 'almendrón', 'botero', 'máquina', 'camello', 'yipitero', 'rutero', 'bicitaxi', 'cocotaxi', 'carro particular', 'botella', 'pon', 'dar pon', 'coger botella', 'ómnibus', 'tren', 'ferrocarril', 'lancha', 'catamarán'],
+      },
+      {
+        key: 'transporte_vehiculos',
+        name: 'Vehículos',
+        words: ['yipi', 'carro', 'auto', 'moto', 'motocicleta', 'bicicleta', 'bici'],
+      },
+      {
+        key: 'transporte_expresiones',
+        name: 'Expresiones',
+        words: ['ir a pie', 'caminar', 'estar en la parada', 'hacer cola para la guagua', 'parada de guagua', 'terminal de ómnibus', 'estación de tren'],
+      },
+    ],
+  },
+  {
+    key: 'tv_medios',
+    name: 'Programas de TV y medios',
+    subcategories: [
+      {
+        key: 'tv_medios_programas',
+        name: 'Programas de TV',
+        words: ['vivir del cuento', 'pánfilo', 'chequera', 'la tremenda corte', 'san nicolás del peladero', 'de tu lado', 'pasaje a lo desconocido', 'noticiero', 'mesa redonda', 'con 2 que se quieran', 'buena suerte', 'sabado del humor', 'sábado del humor', 'detras de la verdad', 'detrás de la verdad', 'cuadro a cuadro', 'cuba dice'],
+      },
+      {
+        key: 'tv_medios_personajes',
+        name: 'Personajes de TV',
+        words: ['tremenda', 'nené', 'candito', 'panchito', 'resoplido', 'panfilo', 'chequera'],
+      },
+      {
+        key: 'tv_medios_cadenas',
+        name: 'Cadenas y medios',
+        words: ['cubavisión', 'cubavision', 'tele rebelde', 'canal educativo', 'canal educacional', 'radio reloj', 'radio progreso', 'radio taíno', 'radio taino', 'radio habana cuba', 'radio rebelde', 'radio cmbf', 'radio enciclopedia', 'telesur', 'multivision'],
+      },
+    ],
+  },
+  {
+    key: 'marcas',
+    name: 'Marcas y productos cubanos',
+    subcategories: [
+      {
+        key: 'marcas_bebidas',
+        name: 'Bebidas',
+        words: ['cristal', 'bucanero', 'mayabe', 'tropicola', 'cachito', 'tukola', 'jupiña', 'ciego montero', 'ciego de ávila', 'tu cola', 'refresco', 'malta', 'pru'],
+      },
+      {
+        key: 'marcas_alimentos',
+        name: 'Alimentos',
+        words: ['pan bimbo', 'pan de flauta', 'pan de manteca', 'galletas cracker', 'galletas maría', 'helado coppelia', 'queso gouda', 'queso crema', 'queso', 'aceite', 'azúcar', 'sal', 'café', 'café cubita', 'cubita'],
+      },
+      {
+        key: 'marcas_productos',
+        name: 'Productos de limpieza y otros',
+        words: ['detergente ace', 'jabón candado', 'jabón de cuaba', 'pasta dental', 'colgate', 'jabón', 'detergente', 'cigarro popular', 'tabaco', 'habano', 'ron havana club', 'ron santiago', 'ron caney', 'havana club', 'santiago', 'caney'],
+      },
+    ],
+  },
+  {
+    key: 'comercios',
+    name: 'Comercios y negocios',
+    subcategories: [
+      {
+        key: 'comercios_tiendas',
+        name: 'Tiendas',
+        words: ['bodega', 'shopping', 'tienda en mlc', 'cimex', 'trd', 'mercado', 'agromercado', 'placita', 'kiosco', 'carrito', 'tienda', 'supermercado', 'minimarket'],
+      },
+      {
+        key: 'comercios_restaurantes',
+        name: 'Restaurantes',
+        words: ['paladar', 'restaurante estatal', 'cafetería', 'pizzería', 'heladería', 'coppelia', 'la rampa', 'restaurante', 'comedor'],
+      },
+      {
+        key: 'comercios_servicios',
+        name: 'Servicios',
+        words: ['barbería', 'peluquería', 'taller', 'carpintería', 'zapatería', 'sastrería', 'lavandería', 'fotocopiadora', 'taller de reparación'],
+      },
+      {
+        key: 'comercios_mercados',
+        name: 'Mercados y otros',
+        words: ['mercado de cuentapropista', 'mercado agropecuario', 'mercado de artesanía', 'feria', 'mercado artesanal', 'mercado libre', 'farmacia', 'hospital', 'clínica', 'banco', 'cadeca', 'casa de cambio', 'hotel', 'casa particular'],
       },
     ],
   },

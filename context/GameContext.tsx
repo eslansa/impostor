@@ -40,6 +40,7 @@ function createDefaultSettings(): GameSettings {
   return {
     showHintToImpostor: false,
     categorySelections,
+    enableSurprises: false,
   };
 }
 
@@ -69,7 +70,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
     setNumberOfPlayers(4);
   };
 
-  const getImpostorCountForPlayers = (count: number) => getImpostorCount(count);
+  const getImpostorCountForPlayers = (count: number) => getImpostorCount(count, settings);
 
   return (
     <GameContext.Provider
