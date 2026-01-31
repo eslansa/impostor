@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, TextInput, ScrollView, Pressable, Text, KeyboardAvoidingView, Platform } from 'react-native';
+import { View, StyleSheet, TextInput, Pressable, Text } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/context/GameContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { HapticFeedback } from '@/utils/haptics';
+import { KeyboardScrollContainer } from '@/components/common/KeyboardScrollContainer';
 
 export default function PlayersScreen() {
   const router = useRouter();
@@ -38,55 +39,47 @@ export default function PlayersScreen() {
       style={styles.container}
     >
       <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <KeyboardAvoidingView
-          behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-          style={styles.keyboardView}
+        <KeyboardScrollContainer
+          contentContainerStyle={styles.scrollContent}
         >
-          <ScrollView
-            style={styles.scrollView}
-            contentContainerStyle={styles.scrollContent}
-            showsVerticalScrollIndicator={false}
-            keyboardShouldPersistTaps="handled"
-          >
-        <Text style={styles.title}>Jugadores</Text>
-        <Text style={styles.subtitle}>Ingresa los nombres</Text>
+          <Text style={styles.title}>Jugadores</Text>
+          <Text style={styles.subtitle}>Ingresa los nombres</Text>
 
-        <View style={styles.inputsContainer}>
-          {playerNames.map((name, index) => (
-            <View key={index} style={styles.inputWrapper}>
-              <View style={styles.playerNumber}>
-                <Text style={styles.playerNumberText}>{index + 1}</Text>
+          <View style={styles.inputsContainer}>
+            {playerNames.map((name, index) => (
+              <View key={index} style={styles.inputWrapper}>
+                <View style={styles.playerNumber}>
+                  <Text style={styles.playerNumberText}>{index + 1}</Text>
+                </View>
+                <TextInput
+                  style={styles.input}
+                  placeholder={`Jugador ${index + 1}`}
+                  placeholderTextColor="rgba(255, 255, 255, 0.4)"
+                  value={name}
+                  onChangeText={(value) => handleNameChange(index, value)}
+                  returnKeyType="next"
+                  blurOnSubmit={false}
+                  maxLength={20}
+                />
               </View>
-              <TextInput
-                style={styles.input}
-                placeholder={`Jugador ${index + 1}`}
-                placeholderTextColor="rgba(255, 255, 255, 0.4)"
-                value={name}
-                onChangeText={(value) => handleNameChange(index, value)}
-                returnKeyType="next"
-                blurOnSubmit={false}
-                maxLength={20}
-              />
-            </View>
-          ))}
-        </View>
+            ))}
+          </View>
 
-        <Pressable onPress={handleContinue} style={styles.startButton}>
-          <LinearGradient
-            colors={['#10b981', '#059669', '#047857']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.startButtonGradient}
-          >
-            <Text style={styles.startButtonText}>INICIAR JUEGO</Text>
-          </LinearGradient>
-        </Pressable>
+          <Pressable onPress={handleContinue} style={styles.startButton}>
+            <LinearGradient
+              colors={['#10b981', '#059669', '#047857']}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 0 }}
+              style={styles.startButtonGradient}
+            >
+              <Text style={styles.startButtonText}>INICIAR JUEGO</Text>
+            </LinearGradient>
+          </Pressable>
 
-        <Text style={styles.hint}>
-          Los campos vacios usaran nombres por defecto
-        </Text>
-          </ScrollView>
-        </KeyboardAvoidingView>
+          <Text style={styles.hint}>
+            Los campos vacios usaran nombres por defecto
+          </Text>
+        </KeyboardScrollContainer>
       </SafeAreaView>
     </LinearGradient>
   );
@@ -99,16 +92,11 @@ const styles = StyleSheet.create({
   safeArea: {
     flex: 1,
   },
-  keyboardView: {
-    flex: 1,
-  },
-  scrollView: {
-    flex: 1,
-  },
   scrollContent: {
     paddingHorizontal: 24,
     paddingVertical: 40,
     alignItems: 'center',
+    minHeight: '100%',
   },
   title: {
     fontSize: 32,
@@ -190,4 +178,3 @@ const styles = StyleSheet.create({
     includeFontPadding: false,
   },
 });
-

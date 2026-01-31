@@ -12,6 +12,8 @@ export default function Home() {
   const { resetGame, numberOfPlayers, settings, getImpostorCountForPlayers } = useGame();
 
   useEffect(() => {
+    // Solo resetear el juego cuando volvemos al menú principal
+    // No usar currentRound como dependencia para evitar loops
     resetGame();
   }, []);
 

@@ -11,17 +11,34 @@ export default function RoundStartScreen() {
   const { players, currentRound, startNewRound } = useGame();
   const [isReady, setIsReady] = useState(false);
 
+  // Efecto para crear la ronda inmediatamente al montar el componente
   useEffect(() => {
+    // Si no hay ronda y hay jugadores, crear la ronda inmediatamente
     if (!currentRound && players.length > 0) {
       startNewRound();
     }
+    // Solo ejecutar al montar, no cuando cambien las dependencias
+  }, []);
+
+  // Efecto separado para actualizar isReady cuando cambia currentRound
+  useEffect(() => {
     if (currentRound && currentRound.players.length > 0) {
       setIsReady(true);
+    } else {
+      setIsReady(false);
     }
-  }, [currentRound, players]);
+  }, [currentRound]);
+
+  useEffect(() => {
+    if (currentRound && currentRound.players.length > 0) {
+      setIsReady(true);
+    } else {
+      setIsReady(false);
+    }
+  }, [currentRound]);
 
   const handleContinue = () => {
-    if (isReady) {
+    if (isReady && currentRound) {
       HapticFeedback.success();
       router.replace('/round');
     }
@@ -55,13 +72,6 @@ export default function RoundStartScreen() {
         <View style={styles.roundBadge}>
           <Text style={styles.roundLabel}>RONDA</Text>
           <Text style={styles.roundNumber}>{currentRound.roundNumber}</Text>
-          {currentRound.impostorCount > 1 && (
-            <View style={styles.impostorBadge}>
-              <Text style={styles.impostorBadgeText}>
-                {currentRound.impostorCount} IMPOSTORES
-              </Text>
-            </View>
-          )}
         </View>
 
         {/* First player */}

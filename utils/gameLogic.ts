@@ -34,6 +34,7 @@ export const ALL_CATEGORIES: CategoryKey[] = ['jerga', 'influencers', 'comida', 
 function getAvailableWords(settings: GameSettings): { words: string[]; categoryName: string }[] {
   const availableWords: { words: string[]; categoryName: string }[] = [];
 
+  // Agregar categorías predefinidas
   CATEGORIES_CONFIG.forEach((categoryConfig) => {
     const categorySelection = settings.categorySelections[categoryConfig.key];
     
@@ -58,6 +59,24 @@ function getAvailableWords(settings: GameSettings): { words: string[]; categoryN
       availableWords.push({
         words: categoryWords,
         categoryName: categoryConfig.name,
+      });
+    }
+  });
+
+  // Agregar categorías personalizadas
+  settings.customCategories.forEach((customCategory) => {
+    const categoryWords: string[] = [];
+
+    // Recopilar palabras de todas las subcategorías de la categoría personalizada
+    customCategory.subcategories.forEach((subcategory) => {
+      categoryWords.push(...subcategory.words);
+    });
+
+    // Si hay palabras, agregar la categoría personalizada
+    if (categoryWords.length > 0) {
+      availableWords.push({
+        words: categoryWords,
+        categoryName: customCategory.name,
       });
     }
   });
@@ -109,15 +128,15 @@ function shuffleArray<T>(array: T[]): T[] {
 
 // Calcular número de impostores basado en cantidad de jugadores
 export function getImpostorCount(playerCount: number, settings?: GameSettings): number {
-  // Si hay más de 5 jugadores y hay un número personalizado configurado, usarlo
-  if (playerCount > 5 && settings?.customImpostorCount !== undefined) {
+  // Si está habilitada la configuración personalizada de impostores, usarla
+  if (settings?.enableCustomImpostorCount && settings.customImpostorCount !== undefined) {
     // Validar que el número personalizado sea válido (al menos 1 y menos que el número de jugadores)
     const customCount = Math.max(1, Math.min(settings.customImpostorCount, playerCount - 1));
     return customCount;
   }
   
-  // Lógica por defecto: 6+ jugadores = 2 impostores, menos de 6 = 1 impostor
-  return playerCount >= 6 ? 2 : 1;
+  // Lógica por defecto: 4+ jugadores = 2 impostores, menos de 4 = 1 impostor
+  return playerCount >= 4 ? 2 : 1;
 }
 
 // Tipos de sorpresas disponibles

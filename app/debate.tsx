@@ -104,7 +104,10 @@ export default function DebateScreen() {
 
   const handleEndGame = () => {
     HapticFeedback.light();
-    router.replace('/');
+    // Forzar limpieza completa antes de volver al menú
+    setTimeout(() => {
+      router.replace('/');
+    }, 100);
   };
 
   const progress = timeLeft / DEBATE_TIME;

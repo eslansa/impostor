@@ -78,12 +78,24 @@ export type CategorySelection = {
   };
 };
 
+export type CustomCategory = {
+  key: string; // Key única para la categoría personalizada
+  name: string;
+  subcategories: {
+    key: string;
+    name: string;
+    words: string[];
+  }[];
+};
+
 export type GameSettings = {
   showHintToImpostor: boolean; // Si el impostor ve la categoría de la palabra
   categorySelections: {
     [key in CategoryKey]: CategorySelection;
   };
-  customImpostorCount?: number; // Número personalizado de impostores cuando hay más de 5 jugadores
+  customCategories: CustomCategory[]; // Categorías personalizadas por el usuario
+  customImpostorCount?: number; // Número personalizado de impostores
+  enableCustomImpostorCount: boolean; // Si usar el número personalizado de impostores
   enableSurprises: boolean; // Activar sorpresas cada 7 rondas
 };
 

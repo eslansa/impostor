@@ -1,5 +1,5 @@
-import React, { createContext, useContext, useState, ReactNode } from 'react';
-import { Player, Round, GameSettings, CategoryKey, CategorySelection } from '@/types/game';
+import React, { createContext, useContext, useState, useEffect, ReactNode } from 'react';
+import { Player, Round, GameSettings, CategoryKey, CategorySelection, CustomCategory } from '@/types/game';
 import { createRound, getImpostorCount, ALL_CATEGORIES } from '@/utils/gameLogic';
 import { CATEGORIES_CONFIG } from '@/constants/categories';
 
@@ -12,9 +12,10 @@ type GameContextType = {
   setNumberOfPlayers: (num: number) => void;
   setPlayers: (players: Player[]) => void;
   setSettings: (settings: GameSettings) => void;
-  startNewRound: () => void;
+  startNewRound: (currentPlayers?: Player[]) => void;
   resetGame: () => void;
   getImpostorCountForPlayers: (count: number) => number;
+  clearRoundIfNeeded: () => void;
 };
 
 // Crear configuración por defecto con todas las categorías y subcategorías habilitadas
@@ -40,6 +41,9 @@ function createDefaultSettings(): GameSettings {
   return {
     showHintToImpostor: false,
     categorySelections,
+    customCategories: [],
+    enableCustomImpostorCount: false,
+    customImpostorCount: 1,
     enableSurprises: false,
   };
 }
@@ -72,6 +76,14 @@ export function GameProvider({ children }: { children: ReactNode }) {
 
   const getImpostorCountForPlayers = (count: number) => getImpostorCount(count, settings);
 
+  // Solo limpiar la ronda si hay una activa cuando se resetea el juego
+  const clearRoundIfNeeded = () => {
+    if (currentRound) {
+      setCurrentRound(null);
+      setRoundNumber(0);
+    }
+  };
+
   return (
     <GameContext.Provider
       value={{
@@ -86,6 +98,7 @@ export function GameProvider({ children }: { children: ReactNode }) {
         startNewRound,
         resetGame,
         getImpostorCountForPlayers,
+        clearRoundIfNeeded,
       }}
     >
       {children}

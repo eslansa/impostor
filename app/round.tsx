@@ -21,7 +21,7 @@ export default function RoundScreen() {
       setCurrentPlayerIndex(0);
       setIsCardRevealed(false);
     }
-  }, [currentRound?.roundNumber]);
+  }, [currentRound]);
 
   const handleCardFlip = () => {
     HapticFeedback.cardFlip();

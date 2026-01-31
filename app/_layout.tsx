@@ -7,7 +7,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { GameProvider } from '@/context/GameContext';
-import { View, KeyboardAvoidingView, Platform, StyleSheet } from 'react-native';
+import { View, StyleSheet } from 'react-native';
 import { SafeAreaProvider } from '@/components/ui/safe-area-view';
 
 export {
@@ -46,73 +46,82 @@ function RootLayoutNav() {
         <GameProvider>
           <StatusBar style="light" />
           <View style={styles.container}>
-            <KeyboardAvoidingView
-              behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-              style={styles.container}
+            <Stack
+              screenOptions={{
+                headerShown: false,
+                animation: 'slide_from_right',
+                contentStyle: { backgroundColor: '#1e1b4b' },
+              }}
             >
-              <Stack
-                screenOptions={{
-                  headerShown: false,
-                  animation: 'slide_from_right',
-                  contentStyle: { backgroundColor: '#1e1b4b' },
+              <Stack.Screen 
+                name="index" 
+                options={{
+                  title: 'Inicio',
                 }}
-              >
-                <Stack.Screen 
-                  name="index" 
-                  options={{
-                    title: 'Inicio',
-                  }}
-                />
-                <Stack.Screen 
-                  name="players" 
-                  options={{
-                    title: 'Jugadores',
-                    animation: 'slide_from_right',
-                  }}
-                />
-                <Stack.Screen 
-                  name="settings" 
-                  options={{
-                    title: 'Ajustes',
-                    animation: 'slide_from_right',
-                  }}
-                />
-                <Stack.Screen 
-                  name="round-start" 
-                  options={{
-                    title: 'Inicio de Ronda',
-                    animation: 'slide_from_right',
-                  }}
-                />
-                <Stack.Screen 
-                  name="round" 
-                  options={{
-                    title: 'Ronda',
-                    animation: 'slide_from_right',
-                  }}
-                />
-                <Stack.Screen 
-                  name="debate" 
-                  options={{
-                    title: 'Debate',
-                    animation: 'slide_from_right',
-                  }}
-                />
-                <Stack.Screen 
-                  name="modal" 
-                  options={{
-                    presentation: 'modal',
-                    animation: 'slide_from_bottom',
-                  }}
-                />
-                <Stack.Screen 
-                  name="tabs" 
-                  options={{
-                    headerShown: false,
-                  }}
-                />
-              </Stack>
-            </KeyboardAvoidingView>
+              />
+              <Stack.Screen 
+                name="players" 
+                options={{
+                  title: 'Jugadores',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen 
+                name="settings" 
+                options={{
+                  title: 'Ajustes',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen 
+                name="add-category" 
+                options={{
+                  title: 'Agregar Categoría',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen 
+                name="edit-category" 
+                options={{
+                  title: 'Editar Categoría',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen 
+                name="round-start" 
+                options={{
+                  title: 'Inicio de Ronda',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen 
+                name="round" 
+                options={{
+                  title: 'Ronda',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen 
+                name="debate" 
+                options={{
+                  title: 'Debate',
+                  animation: 'slide_from_right',
+                }}
+              />
+              <Stack.Screen 
+                name="modal" 
+                options={{
+                  presentation: 'modal',
+                  animation: 'slide_from_bottom',
+                }}
+              />
+              <Stack.Screen 
+                name="tabs" 
+                options={{
+                  headerShown: false,
+                }}
+              />
+            </Stack>
           </View>
         </GameProvider>
       </GluestackUIProvider>

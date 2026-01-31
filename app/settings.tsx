@@ -1,62 +1,43 @@
 import React, { useState, useEffect } from 'react';
-import { View, StyleSheet, Pressable, Text, Switch, ScrollView } from 'react-native';
+import { View, StyleSheet, Pressable, Text, Switch, ScrollView, Alert, Keyboard } from 'react-native';
 import { useRouter } from 'expo-router';
 import { useGame } from '@/context/GameContext';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CATEGORIES_CONFIG } from '@/constants/categories';
-import { GameSettings, CategoryKey, SubcategoryKey } from '@/types/game';
+import { GameSettings, CategoryKey, SubcategoryKey, CustomCategory } from '@/types/game';
 import { FontAwesome } from '@expo/vector-icons';
 import { SafeAreaView } from '@/components/ui/safe-area-view';
 import { HapticFeedback } from '@/utils/haptics';
 
 export default function SettingsScreen() {
   const router = useRouter();
-  const { numberOfPlayers, setNumberOfPlayers, settings, setSettings, getImpostorCountForPlayers } = useGame();
+  const { numberOfPlayers, setNumberOfPlayers, settings, setSettings, getImpostorCountForPlayers, clearRoundIfNeeded } = useGame();
 
   const [tempPlayers, setTempPlayers] = useState(numberOfPlayers);
   const [showHint, setShowHint] = useState(settings.showHintToImpostor);
   const [enableSurprises, setEnableSurprises] = useState(settings.enableSurprises);
+  const [enableCustomImpostor, setEnableCustomImpostor] = useState(settings.enableCustomImpostorCount);
+  const [tempCustomImpostorCount, setTempCustomImpostorCount] = useState(settings.customImpostorCount || 1);
   const [tempCategorySelections, setTempCategorySelections] = useState(settings.categorySelections);
-  const [expandedCategories, setExpandedCategories] = useState<Set<CategoryKey>>(new Set());
-  
-  // Calcular el número de impostores por defecto para más de 5 jugadores
-  const getDefaultImpostorCount = (playerCount: number) => playerCount >= 6 ? 2 : 1;
-  const [tempCustomImpostorCount, setTempCustomImpostorCount] = useState(() => {
-    // Inicializar con el valor guardado o el valor por defecto
-    return settings.customImpostorCount ?? getDefaultImpostorCount(numberOfPlayers);
-  });
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
 
   // Actualizar el contador de impostores cuando cambia el número de jugadores
   useEffect(() => {
-    if (tempPlayers > 5) {
-      // Si no hay un valor personalizado guardado y estamos aumentando jugadores, usar el valor por defecto
-      if (settings.customImpostorCount === undefined && tempPlayers > numberOfPlayers) {
-        setTempCustomImpostorCount(2);
-      }
-      // Asegurar que el valor personalizado no exceda el número de jugadores - 1
-      const maxImpostors = tempPlayers - 1;
-      setTempCustomImpostorCount((prev) => Math.max(1, Math.min(prev, maxImpostors)));
+    const maxImpostors = Math.max(1, tempPlayers - 1);
+    if (tempCustomImpostorCount > maxImpostors) {
+      setTempCustomImpostorCount(maxImpostors);
     }
-  }, [tempPlayers, settings.customImpostorCount, numberOfPlayers]);
+  }, [tempPlayers, tempCustomImpostorCount]);
 
   const impostorCount = getImpostorCountForPlayers(tempPlayers);
 
   const handleIncrement = () => {
-    if (tempPlayers < 8) {
-      HapticFeedback.light();
-      const newCount = tempPlayers + 1;
-      setTempPlayers(newCount);
-      // Si ahora hay más de 5 jugadores y no hay un valor personalizado, establecer el valor por defecto
-      if (newCount > 5 && settings.customImpostorCount === undefined) {
-        setTempCustomImpostorCount(2);
-      }
-    } else {
-      HapticFeedback.error();
-    }
+    HapticFeedback.light();
+    setTempPlayers(tempPlayers + 1);
   };
 
   const handleDecrement = () => {
-    if (tempPlayers > 4) {
+    if (tempPlayers > 3) {
       HapticFeedback.light();
       setTempPlayers(tempPlayers - 1);
     } else {
@@ -65,7 +46,8 @@ export default function SettingsScreen() {
   };
 
   const handleImpostorIncrement = () => {
-    if (tempCustomImpostorCount < tempPlayers - 1) {
+    const maxImpostors = tempPlayers - 1;
+    if (tempCustomImpostorCount < maxImpostors) {
       HapticFeedback.light();
       setTempCustomImpostorCount(tempCustomImpostorCount + 1);
     } else {
@@ -92,7 +74,12 @@ export default function SettingsScreen() {
     setEnableSurprises(value);
   };
 
-  const toggleCategoryExpansion = (categoryKey: CategoryKey) => {
+  const handleCustomImpostorToggle = (value: boolean) => {
+    HapticFeedback.selection();
+    setEnableCustomImpostor(value);
+  };
+
+  const toggleCategoryExpansion = (categoryKey: string) => {
     HapticFeedback.light();
     setExpandedCategories((prev) => {
       const newSet = new Set(prev);
@@ -105,330 +92,273 @@ export default function SettingsScreen() {
     });
   };
 
-  const handleCategoryToggle = (categoryKey: CategoryKey) => {
+  const toggleCategoryEnabled = (categoryKey: CategoryKey) => {
     HapticFeedback.selection();
-    setTempCategorySelections((prev) => {
-      const newSelections = { ...prev };
-      const currentSelection = newSelections[categoryKey];
-      
-      // Si desactivamos la categoría, desactivamos todas las subcategorías
-      // Si activamos la categoría, activamos todas las subcategorías
-      const newEnabled = !currentSelection.enabled;
-      
-      const newSubcategories: { [key in SubcategoryKey]?: boolean } = {};
-      const categoryConfig = CATEGORIES_CONFIG.find((cat) => cat.key === categoryKey);
-      
-      if (categoryConfig) {
-        categoryConfig.subcategories.forEach((subcategory) => {
-          newSubcategories[subcategory.key] = newEnabled;
-        });
-      }
+    setTempCategorySelections((prev) => ({
+      ...prev,
+      [categoryKey]: {
+        ...prev[categoryKey],
+        enabled: !prev[categoryKey].enabled,
+      },
+    }));
+  };
 
-      newSelections[categoryKey] = {
-        ...currentSelection,
-        enabled: newEnabled,
-        subcategories: newSubcategories,
-      };
+  const toggleSubcategoryEnabled = (categoryKey: CategoryKey, subcategoryKey: SubcategoryKey) => {
+    HapticFeedback.selection();
+    setTempCategorySelections((prev) => ({
+      ...prev,
+      [categoryKey]: {
+        ...prev[categoryKey],
+        subcategories: {
+          ...prev[categoryKey].subcategories,
+          [subcategoryKey]: !prev[categoryKey].subcategories[subcategoryKey],
+        },
+      },
+    }));
+  };
 
-      return newSelections;
+  const deleteCustomCategory = (categoryKey: string) => {
+    Alert.alert(
+      'Eliminar categoría',
+      '¿Estás seguro de que quieres eliminar esta categoría personalizada?',
+      [
+        { text: 'Cancelar', style: 'cancel' },
+        {
+          text: 'Eliminar',
+          style: 'destructive',
+          onPress: () => {
+            const updatedCategories = settings.customCategories.filter(cat => cat.key !== categoryKey);
+            setSettings({
+              ...settings,
+              customCategories: updatedCategories,
+            });
+            HapticFeedback.success();
+          },
+        },
+      ]
+    );
+  };
+
+  const navigateToAddCategory = () => {
+    HapticFeedback.light();
+    router.push('/add-category');
+  };
+
+  const navigateToEditCategory = (category: CustomCategory) => {
+    HapticFeedback.light();
+    router.push({
+      pathname: '/edit-category',
+      params: { categoryKey: category.key }
     });
   };
 
-  const handleSubcategoryToggle = (categoryKey: CategoryKey, subcategoryKey: SubcategoryKey) => {
-    HapticFeedback.selection();
-    setTempCategorySelections((prev) => {
-      const newSelections = { ...prev };
-      const currentSelection = newSelections[categoryKey];
-      const currentSubcategoryEnabled = currentSelection.subcategories[subcategoryKey] !== false;
-
-      // Actualizar la subcategoría
-      const newSubcategories = {
-        ...currentSelection.subcategories,
-        [subcategoryKey]: !currentSubcategoryEnabled,
-      };
-
-      // Verificar si todas las subcategorías están desactivadas
-      const categoryConfig = CATEGORIES_CONFIG.find((cat) => cat.key === categoryKey);
-      let allDisabled = true;
-      if (categoryConfig) {
-        allDisabled = categoryConfig.subcategories.every(
-          (sub) => newSubcategories[sub.key] === false
-        );
-      }
-
-      newSelections[categoryKey] = {
-        ...currentSelection,
-        enabled: !allDisabled, // Si todas están desactivadas, desactivar la categoría
-        subcategories: newSubcategories,
-      };
-
-      return newSelections;
-    });
-  };
-
-  const handleSave = () => {
-    HapticFeedback.success();
-    setNumberOfPlayers(tempPlayers);
+  const saveSettings = () => {
+    Keyboard.dismiss();
     const newSettings: GameSettings = {
       showHintToImpostor: showHint,
-      categorySelections: tempCategorySelections,
-      // Solo guardar customImpostorCount si hay más de 5 jugadores
-      customImpostorCount: tempPlayers > 5 ? tempCustomImpostorCount : undefined,
       enableSurprises: enableSurprises,
+      enableCustomImpostorCount: enableCustomImpostor,
+      customImpostorCount: enableCustomImpostor ? tempCustomImpostorCount : undefined,
+      categorySelections: tempCategorySelections,
+      customCategories: settings.customCategories,
     };
+
     setSettings(newSettings);
-    router.back();
+    setNumberOfPlayers(tempPlayers);
+    clearRoundIfNeeded(); // Limpiar ronda si hay una activa
+    HapticFeedback.success();
+    
+    // Forzar limpieza del cache al salir de settings
+    setTimeout(() => {
+      router.back();
+    }, 100);
   };
 
-  // Calcular estadísticas
-  const getTotalEnabledSubcategories = () => {
-    let total = 0;
-    CATEGORIES_CONFIG.forEach((categoryConfig) => {
-      const selection = tempCategorySelections[categoryConfig.key];
-      if (selection.enabled) {
-        categoryConfig.subcategories.forEach((subcategory) => {
-          if (selection.subcategories[subcategory.key] !== false) {
-            total++;
-          }
-        });
-      }
-    });
-    return total;
-  };
-
-  const getTotalSubcategories = () => {
-    return CATEGORIES_CONFIG.reduce((sum, cat) => sum + cat.subcategories.length, 0);
+  const handleBack = () => {
+    Keyboard.dismiss();
+    setTimeout(() => {
+      router.back();
+    }, 50);
   };
 
   return (
-    <LinearGradient
-      colors={['#1e1b4b', '#312e81', '#4c1d95']}
-      style={styles.container}
-    >
-      <SafeAreaView edges={['top', 'bottom']} style={styles.safeArea}>
-        <ScrollView
-          style={styles.scrollView}
-          contentContainerStyle={styles.scrollContent}
-          showsVerticalScrollIndicator={false}
-        >
-        <Text style={styles.title}>Ajustes</Text>
-
-        {/* Jugadores */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Jugadores</Text>
-          <View style={styles.playerSelector}>
-            <Pressable
-              onPress={handleDecrement}
-              style={({ pressed }) => [
-                styles.selectorButton,
-                tempPlayers <= 4 && styles.selectorButtonDisabled,
-                pressed && !(tempPlayers <= 4) && styles.selectorButtonPressed,
-              ]}
-              disabled={tempPlayers <= 4}
-            >
-              <Text style={styles.selectorButtonText}>-</Text>
+    <SafeAreaView style={styles.container}>
+      <LinearGradient colors={['#1e1b4b', '#312e81']} style={styles.gradient}>
+        <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+          <View style={styles.header}>
+            <Pressable onPress={handleBack} style={styles.backButton}>
+              <FontAwesome name="arrow-left" size={24} color="white" />
             </Pressable>
-
-            <View style={styles.selectorValue}>
-              <Text style={styles.selectorValueText}>{tempPlayers}</Text>
-            </View>
-
-            <Pressable
-              onPress={handleIncrement}
-              style={({ pressed }) => [
-                styles.selectorButton,
-                tempPlayers >= 8 && styles.selectorButtonDisabled,
-                pressed && !(tempPlayers >= 8) && styles.selectorButtonPressed,
-              ]}
-              disabled={tempPlayers >= 8}
-            >
-              <Text style={styles.selectorButtonText}>+</Text>
-            </Pressable>
+            <Text style={styles.title}>Configuración</Text>
           </View>
-          <Text style={styles.selectorHint}>4 - 8 jugadores</Text>
-          {impostorCount > 1 && (
-            <View style={styles.impostorBadge}>
-              <Text style={styles.impostorBadgeText}>{impostorCount} IMPOSTORES</Text>
-            </View>
-          )}
-        </View>
 
-        {/* Selector de impostores personalizado (solo cuando hay más de 5 jugadores) */}
-        {tempPlayers > 5 && (
+          {/* Número de Jugadores */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Número de Impostores</Text>
-            <Text style={styles.sectionDescription}>
-              Configura cuántos impostores habrá en la partida
-            </Text>
-            <View style={styles.playerSelector}>
-              <Pressable
-                onPress={handleImpostorDecrement}
-                style={({ pressed }) => [
-                  styles.selectorButton,
-                  tempCustomImpostorCount <= 1 && styles.selectorButtonDisabled,
-                  pressed && !(tempCustomImpostorCount <= 1) && styles.selectorButtonPressed,
-                ]}
-                disabled={tempCustomImpostorCount <= 1}
-              >
-                <Text style={styles.selectorButtonText}>-</Text>
+            <Text style={styles.sectionTitle}>Número de Jugadores</Text>
+            <View style={styles.playerControl}>
+              <Pressable style={styles.button} onPress={handleDecrement}>
+                <FontAwesome name="minus" size={20} color="white" />
               </Pressable>
-
-              <View style={styles.selectorValue}>
-                <Text style={styles.selectorValueText}>{tempCustomImpostorCount}</Text>
-              </View>
-
-              <Pressable
-                onPress={handleImpostorIncrement}
-                style={({ pressed }) => [
-                  styles.selectorButton,
-                  tempCustomImpostorCount >= tempPlayers - 1 && styles.selectorButtonDisabled,
-                  pressed && !(tempCustomImpostorCount >= tempPlayers - 1) && styles.selectorButtonPressed,
-                ]}
-                disabled={tempCustomImpostorCount >= tempPlayers - 1}
-              >
-                <Text style={styles.selectorButtonText}>+</Text>
+              <Text style={styles.playerCount}>{tempPlayers}</Text>
+              <Pressable style={styles.button} onPress={handleIncrement}>
+                <FontAwesome name="plus" size={20} color="white" />
               </Pressable>
             </View>
-            <Text style={styles.selectorHint}>1 - {tempPlayers - 1} impostores</Text>
+            <Text style={styles.info}>Jugadores: Ilimitado</Text>
           </View>
-        )}
 
-        {/* Categorías y Subcategorías */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Categorías y Subcategorías</Text>
-          <Text style={styles.sectionDescription}>
-            Selecciona las categorías y subcategorías de palabras
-          </Text>
-          
-          {CATEGORIES_CONFIG.map((categoryConfig) => {
-            const categorySelection = tempCategorySelections[categoryConfig.key];
-            const isExpanded = expandedCategories.has(categoryConfig.key);
-            const enabledSubcategoriesCount = categoryConfig.subcategories.filter(
-              (sub) => categorySelection.subcategories[sub.key] !== false
-            ).length;
-
-            return (
-              <View key={categoryConfig.key} style={styles.categoryContainer}>
-                {/* Header de categoría */}
-                <Pressable
-                  onPress={() => toggleCategoryExpansion(categoryConfig.key)}
-                  style={styles.categoryHeader}
-                >
-                  <View style={styles.categoryHeaderLeft}>
-                    <FontAwesome
-                      name={isExpanded ? 'chevron-down' : 'chevron-right'}
-                      size={16}
-                      color="rgba(255, 255, 255, 0.6)"
-                      style={styles.expandIcon}
-                    />
-                    <Text style={styles.categoryHeaderText}>{categoryConfig.name}</Text>
-                    <Text style={styles.categoryCountBadge}>
-                      {enabledSubcategoriesCount}/{categoryConfig.subcategories.length}
-                    </Text>
-                  </View>
-                  <Switch
-                    value={categorySelection.enabled}
-                    onValueChange={() => handleCategoryToggle(categoryConfig.key)}
-                    trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
-                    thumbColor={categorySelection.enabled ? '#fff' : '#f4f3f4'}
-                    onTouchEnd={(e) => e.stopPropagation()}
-                  />
+          {/* Configuración de Impostores */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Configuración de Impostores</Text>
+            <View style={styles.switchRow}>
+              <Text style={styles.label}>Impostores personalizados</Text>
+              <Switch
+                value={enableCustomImpostor}
+                onValueChange={handleCustomImpostorToggle}
+                trackColor={{ false: '#767577', true: '#8b5cf6' }}
+                thumbColor={enableCustomImpostor ? '#ffffff' : '#f4f3f4'}
+              />
+            </View>
+            
+            {enableCustomImpostor && (
+              <View style={styles.impostorControl}>
+                <Pressable style={styles.button} onPress={handleImpostorDecrement}>
+                  <FontAwesome name="minus" size={20} color="white" />
                 </Pressable>
+                <Text style={styles.impostorCount}>{tempCustomImpostorCount}</Text>
+                <Pressable style={styles.button} onPress={handleImpostorIncrement}>
+                  <FontAwesome name="plus" size={20} color="white" />
+                </Pressable>
+              </View>
+            )}
+            
+            <Text style={styles.info}>
+              Actual: {enableCustomImpostor ? `${tempCustomImpostorCount} impostores` : `${impostorCount} impostores (automático)`}
+            </Text>
+          </View>
 
-                {/* Subcategorías expandidas */}
-                {isExpanded && categoryConfig.subcategories.map((subcategory) => {
-                  const isSubcategoryEnabled = categorySelection.subcategories[subcategory.key] !== false && categorySelection.enabled;
-                  
-                  return (
-                    <View key={subcategory.key} style={styles.subcategoryContainer}>
-                      <View style={styles.subcategoryContent}>
-                        <Text style={[
-                          styles.subcategoryName,
-                          !categorySelection.enabled && styles.subcategoryNameDisabled
-                        ]}>
-                          {subcategory.name}
-                        </Text>
-                        <Text style={[
-                          styles.subcategoryWordCount,
-                          !categorySelection.enabled && styles.subcategoryWordCountDisabled
-                        ]}>
-                          {subcategory.words.length} palabras
-                        </Text>
-                      </View>
+          {/* Opciones de Juego */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Opciones de Juego</Text>
+            <View style={styles.switchRow}>
+              <Text style={styles.label}>Mostrar pista al impostor</Text>
+              <Switch
+                value={showHint}
+                onValueChange={handleHintToggle}
+                trackColor={{ false: '#767577', true: '#8b5cf6' }}
+                thumbColor={showHint ? '#ffffff' : '#f4f3f4'}
+              />
+            </View>
+            <View style={styles.switchRow}>
+              <Text style={styles.label}>Activar sorpresas cada 7 rondas</Text>
+              <Switch
+                value={enableSurprises}
+                onValueChange={handleSurprisesToggle}
+                trackColor={{ false: '#767577', true: '#8b5cf6' }}
+                thumbColor={enableSurprises ? '#ffffff' : '#f4f3f4'}
+              />
+            </View>
+          </View>
+
+          {/* Categorías Personalizadas */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Categorías Personalizadas</Text>
+              <Pressable style={styles.addButton} onPress={navigateToAddCategory}>
+                <FontAwesome name="plus" size={16} color="white" />
+              </Pressable>
+            </View>
+            
+            {settings.customCategories.length === 0 ? (
+              <Text style={styles.emptyText}>No hay categorías personalizadas</Text>
+            ) : (
+              settings.customCategories.map((category) => (
+                <View key={category.key} style={styles.customCategory}>
+                  <View style={styles.customCategoryHeader}>
+                    <Text style={styles.customCategoryName}>{category.name}</Text>
+                    <View style={styles.customCategoryActions}>
+                      <Pressable 
+                        onPress={() => navigateToEditCategory(category)} 
+                        style={styles.editButton}
+                      >
+                        <FontAwesome name="edit" size={16} color="#3b82f6" />
+                      </Pressable>
+                      <Pressable 
+                        onPress={() => deleteCustomCategory(category.key)}
+                        style={styles.deleteButton}
+                      >
+                        <FontAwesome name="trash" size={16} color="#ef4444" />
+                      </Pressable>
+                    </View>
+                  </View>
+                  <Text style={styles.customCategoryInfo}>
+                    {category.subcategories[0]?.name || 'Sin subcategoría'} • {category.subcategories[0]?.words.length || 0} palabras
+                  </Text>
+                </View>
+              ))
+            )}
+          </View>
+
+          {/* Categorías Predefinidas */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Categorías Predefinidas</Text>
+            {CATEGORIES_CONFIG.map((category) => {
+              const categorySelection = tempCategorySelections[category.key];
+              const isExpanded = expandedCategories.has(category.key);
+              
+              return (
+                <View key={category.key} style={styles.categoryContainer}>
+                  <Pressable
+                    style={styles.categoryHeader}
+                    onPress={() => toggleCategoryExpansion(category.key)}
+                  >
+                    <View style={styles.categoryInfo}>
+                      <Text style={styles.categoryName}>{category.name}</Text>
+                      <Text style={styles.categoryCount}>
+                        {category.subcategories.reduce((acc, sub) => acc + sub.words.length, 0)} palabras
+                      </Text>
+                    </View>
+                    <View style={styles.categoryControls}>
                       <Switch
-                        value={isSubcategoryEnabled}
-                    onValueChange={() => handleSubcategoryToggle(categoryConfig.key, subcategory.key)}
-                        trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
-                        thumbColor={isSubcategoryEnabled ? '#fff' : '#f4f3f4'}
-                        disabled={!categorySelection.enabled}
+                        value={categorySelection.enabled}
+                        onValueChange={() => toggleCategoryEnabled(category.key)}
+                        trackColor={{ false: '#767577', true: '#8b5cf6' }}
+                        thumbColor={categorySelection.enabled ? '#ffffff' : '#f4f3f4'}
+                      />
+                      <FontAwesome
+                        name={isExpanded ? 'chevron-up' : 'chevron-down'}
+                        size={16}
+                        color="white"
                       />
                     </View>
-                  );
-                })}
-              </View>
-            );
-          })}
-
-          <Text style={styles.categoryCount}>
-            {getTotalEnabledSubcategories()} de {getTotalSubcategories()} subcategorías activas
-          </Text>
-        </View>
-
-        {/* Pista para impostor */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Opciones</Text>
-          <View style={styles.optionRow}>
-            <View style={styles.optionTextContainer}>
-              <Text style={styles.optionLabel}>Pista para impostor</Text>
-              <Text style={styles.optionDescription}>
-                El impostor ve la categoría de la palabra
-              </Text>
-            </View>
-            <Switch
-              value={showHint}
-              onValueChange={handleHintToggle}
-              trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
-              thumbColor={showHint ? '#fff' : '#f4f3f4'}
-            />
+                  </Pressable>
+                  
+                  {isExpanded && categorySelection.enabled && (
+                    <View style={styles.subcategories}>
+                      {category.subcategories.map((subcategory) => (
+                        <View key={subcategory.key} style={styles.subcategoryRow}>
+                          <Text style={styles.subcategoryName}>{subcategory.name}</Text>
+                          <Switch
+                            value={categorySelection.subcategories[subcategory.key] !== false}
+                            onValueChange={() => toggleSubcategoryEnabled(category.key, subcategory.key)}
+                            trackColor={{ false: '#767577', true: '#8b5cf6' }}
+                            thumbColor={categorySelection.subcategories[subcategory.key] !== false ? '#ffffff' : '#f4f3f4'}
+                          />
+                        </View>
+                      ))}
+                    </View>
+                  )}
+                </View>
+              );
+            })}
           </View>
-          
-          <View style={[styles.optionRow, { marginTop: 16 }]}>
-            <View style={styles.optionTextContainer}>
-              <Text style={styles.optionLabel}>Sorpresas cada 7 rondas</Text>
-              <Text style={styles.optionDescription}>
-                Activa rondas especiales con reglas diferentes cada 7 rondas
-              </Text>
-            </View>
-            <Switch
-              value={enableSurprises}
-              onValueChange={handleSurprisesToggle}
-              trackColor={{ false: 'rgba(255,255,255,0.2)', true: '#10b981' }}
-              thumbColor={enableSurprises ? '#fff' : '#f4f3f4'}
-            />
-          </View>
-        </View>
 
-        {/* Botón Guardar */}
-        <Pressable onPress={handleSave} style={styles.saveButton}>
-          <LinearGradient
-            colors={['#10b981', '#059669', '#047857']}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.saveButtonGradient}
-          >
-            <Text style={styles.saveButtonText}>GUARDAR</Text>
-          </LinearGradient>
-        </Pressable>
-
-        <Pressable onPress={() => {
-          HapticFeedback.light();
-          router.back();
-        }} style={styles.cancelButton}>
-          <Text style={styles.cancelButtonText}>CANCELAR</Text>
-        </Pressable>
+          <Pressable style={styles.saveButton} onPress={saveSettings}>
+            <Text style={styles.saveButtonText}>Guardar Configuración</Text>
+          </Pressable>
         </ScrollView>
-      </SafeAreaView>
-    </LinearGradient>
+      </LinearGradient>
+    </SafeAreaView>
   );
 }
 
@@ -436,243 +366,195 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
   },
-  safeArea: {
+  gradient: {
     flex: 1,
   },
   scrollView: {
     flex: 1,
+    padding: 20,
   },
-  scrollContent: {
-    paddingHorizontal: 24,
-    paddingVertical: 40,
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginBottom: 30,
+  },
+  backButton: {
+    marginRight: 15,
   },
   title: {
-    fontSize: 32,
+    fontSize: 28,
     fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 1,
-    marginBottom: 32,
-    textAlign: 'center',
-    includeFontPadding: false,
+    color: 'white',
   },
   section: {
-    marginBottom: 28,
-    backgroundColor: 'rgba(255, 255, 255, 0.05)',
-    borderRadius: 16,
+    backgroundColor: 'rgba(255, 255, 255, 0.1)',
+    borderRadius: 15,
     padding: 20,
+    marginBottom: 20,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
   },
   sectionTitle: {
     fontSize: 18,
-    fontWeight: 'bold',
-    color: '#fff',
-    marginBottom: 8,
-    includeFontPadding: false,
+    fontWeight: '600',
+    color: 'white',
+    marginBottom: 15,
   },
-  sectionDescription: {
-    fontSize: 13,
-    color: 'rgba(255, 255, 255, 0.5)',
-    marginBottom: 16,
-    includeFontPadding: false,
-  },
-  playerSelector: {
+  playerControl: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 16,
-    marginTop: 12,
+    marginBottom: 10,
   },
-  selectorButton: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
-    backgroundColor: 'rgba(255, 255, 255, 0.2)',
+  button: {
+    backgroundColor: '#8b5cf6',
+    width: 40,
+    height: 40,
+    borderRadius: 20,
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 2,
-    borderColor: 'rgba(255, 255, 255, 0.3)',
+    marginHorizontal: 20,
   },
-  selectorButtonDisabled: {
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    borderColor: 'rgba(255, 255, 255, 0.1)',
-  },
-  selectorButtonPressed: {
-    opacity: 0.7,
-    transform: [{ scale: 0.95 }],
-  },
-  selectorButtonText: {
+  playerCount: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#fff',
-    includeFontPadding: false,
+    color: 'white',
+    minWidth: 40,
+    textAlign: 'center',
   },
-  selectorValue: {
-    width: 70,
-    height: 70,
-    borderRadius: 35,
-    backgroundColor: 'rgba(255, 255, 255, 0.15)',
+  impostorControl: {
+    flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    borderWidth: 3,
-    borderColor: 'rgba(255, 255, 255, 0.4)',
+    marginTop: 15,
+    marginBottom: 10,
   },
-  selectorValueText: {
-    fontSize: 32,
+  impostorCount: {
+    fontSize: 20,
     fontWeight: 'bold',
-    color: '#fff',
-    includeFontPadding: false,
-  },
-  selectorHint: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)',
-    marginTop: 12,
+    color: 'white',
+    minWidth: 30,
     textAlign: 'center',
-    includeFontPadding: false,
   },
-  impostorBadge: {
-    marginTop: 12,
-    backgroundColor: '#dc2626',
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    alignSelf: 'center',
+  info: {
+    fontSize: 14,
+    color: '#d1d5db',
+    textAlign: 'center',
   },
-  impostorBadgeText: {
-    fontSize: 12,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 1,
-    includeFontPadding: false,
+  switchRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  label: {
+    fontSize: 16,
+    color: 'white',
+    flex: 1,
+  },
+  addButton: {
+    backgroundColor: '#10b981',
+    width: 32,
+    height: 32,
+    borderRadius: 16,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  emptyText: {
+    color: '#9ca3af',
+    textAlign: 'center',
+    fontStyle: 'italic',
+  },
+  customCategory: {
+    backgroundColor: 'rgba(255, 255, 255, 0.05)',
+    borderRadius: 10,
+    padding: 15,
+    marginBottom: 10,
+  },
+  customCategoryHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  customCategoryName: {
+    fontSize: 16,
+    fontWeight: '600',
+    color: 'white',
+  },
+  customCategoryInfo: {
+    fontSize: 14,
+    color: '#9ca3af',
+    marginTop: 5,
+  },
+  customCategoryActions: {
+    flexDirection: 'row',
+    gap: 10,
+  },
+  editButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(59, 130, 246, 0.1)',
+  },
+  deleteButton: {
+    padding: 8,
+    borderRadius: 6,
+    backgroundColor: 'rgba(239, 68, 68, 0.1)',
   },
   categoryContainer: {
-    marginBottom: 12,
-    backgroundColor: 'rgba(255, 255, 255, 0.03)',
-    borderRadius: 12,
-    overflow: 'hidden',
+    marginBottom: 15,
   },
   categoryHeader: {
     flexDirection: 'row',
-    alignItems: 'center',
     justifyContent: 'space-between',
-    padding: 16,
-  },
-  categoryHeaderLeft: {
-    flexDirection: 'row',
     alignItems: 'center',
+    paddingVertical: 10,
+  },
+  categoryInfo: {
     flex: 1,
   },
-  expandIcon: {
-    marginRight: 12,
-  },
-  categoryHeaderText: {
+  categoryName: {
     fontSize: 16,
     fontWeight: '600',
-    color: '#fff',
-    flex: 1,
-    includeFontPadding: false,
-  },
-  categoryCountBadge: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)',
-    backgroundColor: 'rgba(255, 255, 255, 0.1)',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 8,
-    marginLeft: 8,
-    includeFontPadding: false,
-  },
-  subcategoryContainer: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    paddingLeft: 44,
-    borderTopWidth: 1,
-    borderTopColor: 'rgba(255, 255, 255, 0.1)',
-    backgroundColor: 'rgba(0, 0, 0, 0.2)',
-  },
-  subcategoryContent: {
-    flex: 1,
-    marginRight: 12,
-  },
-  subcategoryName: {
-    fontSize: 14,
-    fontWeight: '500',
-    color: 'rgba(255, 255, 255, 0.9)',
-    marginBottom: 4,
-    includeFontPadding: false,
-  },
-  subcategoryNameDisabled: {
-    color: 'rgba(255, 255, 255, 0.4)',
-  },
-  subcategoryWordCount: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)',
-    includeFontPadding: false,
-  },
-  subcategoryWordCountDisabled: {
-    color: 'rgba(255, 255, 255, 0.2)',
+    color: 'white',
   },
   categoryCount: {
     fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.4)',
-    marginTop: 12,
-    textAlign: 'center',
-    includeFontPadding: false,
+    color: '#9ca3af',
   },
-  optionRow: {
+  categoryControls: {
     flexDirection: 'row',
     alignItems: 'center',
+    gap: 10,
+  },
+  subcategories: {
+    paddingLeft: 20,
+  },
+  subcategoryRow: {
+    flexDirection: 'row',
     justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
   },
-  optionTextContainer: {
+  subcategoryName: {
+    fontSize: 14,
+    color: '#d1d5db',
     flex: 1,
-    marginRight: 12,
-  },
-  optionLabel: {
-    fontSize: 15,
-    fontWeight: '600',
-    color: '#fff',
-    includeFontPadding: false,
-  },
-  optionDescription: {
-    fontSize: 12,
-    color: 'rgba(255, 255, 255, 0.5)',
-    marginTop: 2,
-    includeFontPadding: false,
   },
   saveButton: {
-    width: '100%',
-    marginTop: 8,
-    borderRadius: 16,
-    overflow: 'hidden',
-    shadowColor: '#10b981',
-    shadowOffset: { width: 0, height: 4 },
-    shadowOpacity: 0.4,
-    shadowRadius: 8,
-    elevation: 8,
-  },
-  saveButtonGradient: {
-    paddingVertical: 18,
+    backgroundColor: '#10b981',
+    padding: 18,
+    borderRadius: 15,
     alignItems: 'center',
+    marginTop: 20,
+    marginBottom: 40,
   },
   saveButtonText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#fff',
-    letterSpacing: 1,
-    includeFontPadding: false,
-  },
-  cancelButton: {
-    width: '100%',
-    paddingVertical: 14,
-    alignItems: 'center',
-    marginTop: 12,
-  },
-  cancelButtonText: {
-    fontSize: 14,
+    color: 'white',
+    fontSize: 18,
     fontWeight: '600',
-    color: 'rgba(255, 255, 255, 0.6)',
-    includeFontPadding: false,
   },
 });
